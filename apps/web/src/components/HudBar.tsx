@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { Moon, Sun } from "lucide-react";
+import { Moon, RotateCcw, Sun } from "lucide-react";
 import { STRIKES_MAX, HINTS_PER_GAME } from "@/game/types";
 import { useThemeMode } from "./ThemeModeProvider";
 
@@ -13,9 +13,16 @@ type Props = {
   streak: number;
   strikes: number;
   hintsRemaining: number;
+  onNewGame?: () => void;
 };
 
-export default function HudBar({ score, streak, strikes, hintsRemaining }: Props) {
+export default function HudBar({
+  score,
+  streak,
+  strikes,
+  hintsRemaining,
+  onNewGame,
+}: Props) {
   const livesLeft = STRIKES_MAX - strikes;
   const { mode, toggleMode } = useThemeMode();
 
@@ -63,10 +70,10 @@ export default function HudBar({ score, streak, strikes, hintsRemaining }: Props
 
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, auto)",
-          columnGap: { xs: 2.5, sm: 3.5, md: 4 },
-          rowGap: 1,
+          display: "flex",
+          flexWrap: "wrap",
+          columnGap: { xs: 2, sm: 3, md: 4 },
+          rowGap: 1.5,
           alignItems: "end",
           width: { xs: "100%", md: "auto" },
         }}
@@ -89,27 +96,7 @@ export default function HudBar({ score, streak, strikes, hintsRemaining }: Props
             <ButtonBase
               onClick={toggleMode}
               aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              sx={{
-                height: { xs: 24, sm: 28 },
-                paddingInline: 1.25,
-                borderRadius: 999,
-                border: 1,
-                borderColor: "divider",
-                color: "text.primary",
-                fontFamily: 'var(--font-jetbrains), monospace',
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 0.75,
-                transition: "border-color .2s, color .2s, background .2s",
-                "&:hover": {
-                  borderColor: "primary.main",
-                  color: "primary.main",
-                  backgroundColor: "action.hover",
-                },
-              }}
+              sx={pillButtonSx}
             >
               {mode === "dark" ? (
                 <Moon size={13} strokeWidth={1.5} />
@@ -120,6 +107,21 @@ export default function HudBar({ score, streak, strikes, hintsRemaining }: Props
             </ButtonBase>
           </Tooltip>
         </Box>
+        {onNewGame && (
+          <Box>
+            <Label>Run</Label>
+            <Tooltip title="Start a new game" placement="top">
+              <ButtonBase
+                onClick={onNewGame}
+                aria-label="Start a new game"
+                sx={pillButtonSx}
+              >
+                <RotateCcw size={13} strokeWidth={1.5} />
+                New
+              </ButtonBase>
+            </Tooltip>
+          </Box>
+        )}
       </Box>
     </Box>
   );
@@ -186,6 +188,28 @@ function PipStat({
     </Box>
   );
 }
+
+const pillButtonSx = {
+  height: { xs: 24, sm: 28 },
+  paddingInline: 1.25,
+  borderRadius: 999,
+  border: 1,
+  borderColor: "divider",
+  color: "text.primary",
+  fontFamily: 'var(--font-jetbrains), monospace',
+  fontSize: 10,
+  letterSpacing: "0.2em",
+  textTransform: "uppercase" as const,
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 0.75,
+  transition: "border-color .2s, color .2s, background .2s",
+  "&:hover": {
+    borderColor: "primary.main",
+    color: "primary.main",
+    backgroundColor: "action.hover",
+  },
+};
 
 function Label({ children }: { children: React.ReactNode }) {
   return (

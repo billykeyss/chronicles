@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import { ThemeModeProvider } from "@/components/ThemeModeProvider";
 import "./globals.css";
@@ -47,11 +48,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${jetbrains.variable}`}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: noFlashScript }} />
-      </head>
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
+    >
       <body>
+        <Script id="no-flash-theme" strategy="beforeInteractive">
+          {noFlashScript}
+        </Script>
         <AppRouterCacheProvider options={{ key: "mui" }}>
           <ThemeModeProvider>{children}</ThemeModeProvider>
         </AppRouterCacheProvider>

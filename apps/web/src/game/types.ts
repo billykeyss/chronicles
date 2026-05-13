@@ -1,6 +1,16 @@
 import type { LucideIcon } from "lucide-react";
 
-export type CategoryId = "films" | "books" | "inventions" | "wars" | "music";
+export type CategoryId =
+  | "films"
+  | "books"
+  | "inventions"
+  | "wars"
+  | "music"
+  | "art"
+  | "sports"
+  | "science"
+  | "architecture"
+  | "games";
 
 export type SubCategory = {
   id: string;

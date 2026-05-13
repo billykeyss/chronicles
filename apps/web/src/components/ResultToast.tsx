@@ -5,6 +5,7 @@ import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { PlacedEvent } from "@/game/types";
+import { formatYear } from "./EventCard";
 
 type Props = {
   open: boolean;
@@ -22,8 +23,9 @@ export default function ResultToast({ open, result, onClose }: Props) {
     <Snackbar
       open={open}
       autoHideDuration={null}
-      anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
       onClose={onClose}
+      sx={{ mt: { xs: 2, sm: 3 } }}
     >
       <Alert
         onClose={onClose}
@@ -36,7 +38,7 @@ export default function ResultToast({ open, result, onClose }: Props) {
             {result.correct ? "Correct!" : "Misplaced."}
           </Typography>
           <Typography sx={{ fontSize: 13 }}>
-            {result.placedEvent.title} · {result.placedEvent.year}
+            {result.placedEvent.title} · {formatYear(result.placedEvent.year)}
           </Typography>
           {result.correct && result.pointsEarned > 0 && (
             <Typography sx={{ fontWeight: 700 }}>+{result.pointsEarned}</Typography>

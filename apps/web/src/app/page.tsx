@@ -24,8 +24,15 @@ import HintModal from "@/components/HintModal";
 import HudBar from "@/components/HudBar";
 import ResultToast from "@/components/ResultToast";
 import Timeline from "@/components/Timeline";
+import { getEventsForSubcategories, SUBCATEGORY_BY_ID } from "@/game/data";
 import { gameReducer, initialState } from "@/game/state";
-import type { HintType, TimelineEvent } from "@/game/types";
+import {
+  clearPersistedState,
+  loadPersistedState,
+  savePersistedState,
+} from "@/game/persistence";
+import type { CategoryId, HintType, TimelineEvent } from "@/game/types";
+import { fetchLiveEventsForCategories } from "@/wikidata/fetcher";
 import {
   fetchWikipediaSummary,
   firstSentence,
@@ -34,18 +41,37 @@ import {
   type WikipediaSummary,
 } from "@/wikipedia/api";
 
-const NEXT_CARD_DELAY_MS = 1500;
+const NEXT_CARD_DELAY_MS = 450;
+const TOAST_VISIBLE_MS = 2800;
 const PREFETCH_AHEAD = 8;
 
 export default function HomePage() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [hydrated, setHydrated] = useState(false);
+
+  // On mount, restore from localStorage (after hydration so SSR/CSR match).
+  useEffect(() => {
+    const persisted = loadPersistedState();
+    if (persisted) {
+      dispatch({ type: "restore", state: persisted });
+    }
+    setHydrated(true);
+  }, []);
+
+  // Persist every state change once hydrated.
+  useEffect(() => {
+    if (!hydrated) return;
+    savePersistedState(state);
+  }, [state, hydrated]);
   const [hintOpen, setHintOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
+  const [shownResult, setShownResult] = useState<typeof state.lastResult>(null);
   const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(null);
   const [thumbnails, setThumbnails] = useState<Record<string, string | undefined>>({});
   const [summaries, setSummaries] = useState<Record<string, WikipediaSummary | undefined>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [insertIdx, setInsertIdx] = useState<number | null>(null);
+  const [poolLoading, setPoolLoading] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -78,17 +104,20 @@ export default function HomePage() {
   );
 
   useEffect(() => {
-    if (!state.lastResult) {
-      setToastOpen(false);
-      return;
-    }
+    if (!state.lastResult) return;
+    // Latch the result into local state so the toast survives next-card,
+    // and keep it visible long enough to read.
+    setShownResult(state.lastResult);
     setToastOpen(true);
-    if (state.status === "playing") {
-      const t = setTimeout(() => {
-        dispatch({ type: "next-card" });
-      }, NEXT_CARD_DELAY_MS);
-      return () => clearTimeout(t);
-    }
+    const closeT = setTimeout(() => setToastOpen(false), TOAST_VISIBLE_MS);
+    const drawT =
+      state.status === "playing"
+        ? setTimeout(() => dispatch({ type: "next-card" }), NEXT_CARD_DELAY_MS)
+        : null;
+    return () => {
+      clearTimeout(closeT);
+      if (drawT) clearTimeout(drawT);
+    };
   }, [state.lastResult, state.status]);
 
   useEffect(() => {
@@ -128,7 +157,29 @@ export default function HomePage() {
 
   const handleStart = () => {
     setThumbnails({});
-    dispatch({ type: "start-game" });
+    setSummaries({});
+
+    // Start instantly on the bundled pool.
+    const bundled = getEventsForSubcategories(state.selectedSubcategories);
+    dispatch({ type: "start-game", events: bundled });
+
+    // Fire SPARQL queries in the background; append to the pool when they land.
+    const cats = new Set<CategoryId>();
+    for (const subId of state.selectedSubcategories) {
+      const meta = SUBCATEGORY_BY_ID[subId];
+      if (meta) cats.add(meta.category);
+    }
+    if (cats.size === 0) return;
+
+    setPoolLoading(true);
+    fetchLiveEventsForCategories(Array.from(cats))
+      .then((live) => {
+        if (live.length > 0) {
+          dispatch({ type: "extend-pool", events: live });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPoolLoading(false));
   };
 
   const handlePlaceAt = useCallback(
@@ -166,7 +217,7 @@ export default function HomePage() {
       setInsertIdx(null);
       return;
     }
-    if (data.kind === "end") {
+    if (data.kind === "end" || data.kind === "start") {
       setInsertIdx(data.index);
       return;
     }
@@ -233,12 +284,62 @@ export default function HomePage() {
             streak={state.streak}
             strikes={state.strikes}
             hintsRemaining={state.hintsRemaining}
+            onNewGame={
+              state.status === "playing" || state.status === "gameover"
+                ? () => {
+                    setThumbnails({});
+                    clearPersistedState();
+                    dispatch({ type: "restart" });
+                    handleStart();
+                  }
+                : undefined
+            }
           />
 
-          {state.status === "picking" && (
+          {!hydrated && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1.5,
+                py: 6,
+                color: "text.secondary",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: "50%",
+                  border: 1.5,
+                  borderColor: "divider",
+                  borderTopColor: "primary.main",
+                  animation: "spin 0.9s linear infinite",
+                  "@keyframes spin": {
+                    to: { transform: "rotate(360deg)" },
+                  },
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily: 'var(--font-jetbrains), monospace',
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontSize: 10,
+                }}
+              >
+                Restoring your run…
+              </Typography>
+            </Box>
+          )}
+
+          {hydrated && state.status === "picking" && (
             <CategoryPicker
               selected={state.selectedSubcategories}
               difficulty={state.difficulty}
+              loading={poolLoading}
               onToggleSub={(subId) =>
                 dispatch({ type: "toggle-subcategory", subcategory: subId })
               }
@@ -252,7 +353,7 @@ export default function HomePage() {
             />
           )}
 
-          {state.status !== "picking" && (
+          {hydrated && state.status !== "picking" && (
             <Stack spacing={2}>
               <Box
                 sx={{
@@ -326,7 +427,7 @@ export default function HomePage() {
 
       <ResultToast
         open={toastOpen && state.status !== "gameover"}
-        result={state.lastResult}
+        result={shownResult}
         onClose={() => setToastOpen(false)}
       />
 
@@ -339,11 +440,13 @@ export default function HomePage() {
         ranOutOfEvents={state.strikes < 3}
         onRestart={() => {
           setThumbnails({});
+          clearPersistedState();
           dispatch({ type: "restart" });
-          dispatch({ type: "start-game" });
+          handleStart();
         }}
         onChangeCategories={() => {
           setThumbnails({});
+          clearPersistedState();
           dispatch({ type: "restart" });
         }}
       />

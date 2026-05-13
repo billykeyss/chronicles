@@ -24,7 +24,9 @@ export type GameAction =
   | { type: "set-subcategories"; subcategories: string[] }
   | { type: "toggle-category-all"; category: CategoryId }
   | { type: "set-difficulty"; difficulty: Difficulty }
-  | { type: "start-game" }
+  | { type: "start-game"; events?: TimelineEvent[] }
+  | { type: "extend-pool"; events: TimelineEvent[] }
+  | { type: "restore"; state: GameState }
   | { type: "place"; slotIndex: number }
   | { type: "next-card" }
   | { type: "use-hint"; hintType: HintType; relatedSentence?: string }
@@ -82,6 +84,11 @@ function drawCard(
   return { drawn, rest };
 }
 
+function formatYear(y: number): string {
+  if (y >= 0) return String(y);
+  return `${Math.abs(y)} BC`;
+}
+
 function buildHintReveal(
   hintType: HintType,
   event: TimelineEvent,
@@ -90,16 +97,20 @@ function buildHintReveal(
 ): HintReveal {
   if (hintType === "decade") {
     const decadeStart = Math.floor(event.year / 10) * 10;
+    const decadeLabel =
+      decadeStart >= 0
+        ? `${decadeStart}s`
+        : `${Math.abs(decadeStart)}s BC`;
     return {
       type: hintType,
-      content: `This is from the ${decadeStart}s.`,
+      content: `This is from the ${decadeLabel}.`,
       correctSlotIndices,
     };
   }
   if (hintType === "answer") {
     return {
       type: hintType,
-      content: `This event is from ${event.year}. The highlighted slot is correct.`,
+      content: `This event is from ${formatYear(event.year)}. The highlighted slot is correct.`,
       correctSlotIndices,
     };
   }
@@ -148,7 +159,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "start-game": {
-      const events = getEventsForSubcategories(state.selectedSubcategories);
+      const events =
+        action.events && action.events.length > 0
+          ? action.events
+          : getEventsForSubcategories(state.selectedSubcategories);
       const shuffled = shuffle(events);
       if (shuffled.length < 2) return state;
       const minGap = DIFFICULTY_GAP[state.difficulty];
@@ -269,12 +283,46 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "extend-pool": {
+      if (action.events.length === 0) return state;
+      // Avoid dupes by id and by lowercased title|year.
+      const existingIds = new Set<string>([
+        ...state.timeline.map((e) => e.id),
+        ...state.pool.map((e) => e.id),
+        ...(state.current ? [state.current.id] : []),
+      ]);
+      const existingKeys = new Set<string>([
+        ...state.timeline.map((e) => `${e.title.toLowerCase()}|${e.year}`),
+        ...state.pool.map((e) => `${e.title.toLowerCase()}|${e.year}`),
+        ...(state.current
+          ? [`${state.current.title.toLowerCase()}|${state.current.year}`]
+          : []),
+      ]);
+      const fresh: TimelineEvent[] = [];
+      for (const ev of action.events) {
+        if (existingIds.has(ev.id)) continue;
+        const key = `${ev.title.toLowerCase()}|${ev.year}`;
+        if (existingKeys.has(key)) continue;
+        existingIds.add(ev.id);
+        existingKeys.add(key);
+        fresh.push(ev);
+      }
+      if (fresh.length === 0) return state;
+      // Append the new events at the end of the deck so the player's
+      // current sequence isn't disrupted.
+      return { ...state, pool: [...state.pool, ...shuffle(fresh)] };
+    }
+
     case "restart": {
       return {
         ...initialState,
         selectedSubcategories: state.selectedSubcategories,
         difficulty: state.difficulty,
       };
+    }
+
+    case "restore": {
+      return action.state;
     }
 
     default:

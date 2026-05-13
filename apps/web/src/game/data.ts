@@ -1,4 +1,15 @@
-import { BookOpen, Disc3, Film, Landmark, Lightbulb } from "lucide-react";
+import {
+  BookOpen,
+  Building2,
+  Disc3,
+  Film,
+  Gamepad2,
+  Landmark,
+  Lightbulb,
+  Microscope,
+  Palette,
+  Trophy,
+} from "lucide-react";
 import type { Category, CategoryId, SubCategory, TimelineEvent } from "./types";
 
 export const CATEGORIES: Category[] = [
@@ -78,6 +89,70 @@ export const CATEGORIES: Category[] = [
       { id: "m-synth", name: "Synth & new wave", description: "80s electronics" },
       { id: "m-hiphop", name: "Hip-hop landmarks", description: "Boom-bap to trap" },
       { id: "m-modern-pop", name: "Modern pop", description: "2000s onward" },
+    ],
+  },
+  {
+    id: "art",
+    name: "Art",
+    Icon: Palette,
+    description: "Paintings, sculptures, movements.",
+    subcategories: [
+      { id: "a-renaissance", name: "Renaissance", description: "15th–16th century" },
+      { id: "a-baroque-romantic", name: "Baroque & Romantic", description: "Drama and emotion" },
+      { id: "a-impressionism", name: "Impressionism", description: "Light and brushstroke" },
+      { id: "a-modernist", name: "Modernist", description: "Cubism through surrealism" },
+      { id: "a-contemporary", name: "Contemporary", description: "Pop, street, conceptual" },
+    ],
+  },
+  {
+    id: "sports",
+    name: "Sports",
+    Icon: Trophy,
+    description: "Championships and record-breakers.",
+    subcategories: [
+      { id: "s-olympics", name: "Olympics", description: "Modern Games milestones" },
+      { id: "s-world-cup", name: "FIFA World Cup", description: "Football's biggest stage" },
+      { id: "s-records", name: "Individual records", description: "Times records broke" },
+      { id: "s-tennis", name: "Tennis", description: "Grand Slams and dynasties" },
+      { id: "s-boxing", name: "Boxing & fights", description: "Big nights in the ring" },
+    ],
+  },
+  {
+    id: "science",
+    name: "Science",
+    Icon: Microscope,
+    description: "Discoveries that changed what we know.",
+    subcategories: [
+      { id: "sc-astronomy", name: "Astronomy", description: "Skies, stars, cosmology" },
+      { id: "sc-physics", name: "Physics", description: "Forces, particles, fields" },
+      { id: "sc-biology", name: "Biology & evolution", description: "Origins of species" },
+      { id: "sc-chemistry", name: "Chemistry", description: "Elements & compounds" },
+      { id: "sc-climate", name: "Climate science", description: "Earth's changing climate" },
+    ],
+  },
+  {
+    id: "architecture",
+    name: "Architecture",
+    Icon: Building2,
+    description: "Buildings that mark eras.",
+    subcategories: [
+      { id: "ar-ancient", name: "Ancient & medieval", description: "Wonders & cathedrals" },
+      { id: "ar-renaissance", name: "Renaissance & early modern", description: "Domes and palaces" },
+      { id: "ar-modern", name: "Modern", description: "Industrial age skylines" },
+      { id: "ar-contemporary", name: "Contemporary", description: "21st century" },
+    ],
+  },
+  {
+    id: "games",
+    name: "Video games",
+    Icon: Gamepad2,
+    description: "Releases that shifted the medium.",
+    subcategories: [
+      { id: "v-arcade", name: "Arcade era", description: "Quarters & high scores" },
+      { id: "v-console-early", name: "Early consoles", description: "NES, Genesis, Game Boy" },
+      { id: "v-90s", name: "1990s landmarks", description: "3D era begins" },
+      { id: "v-2000s", name: "2000s", description: "Online, online, online" },
+      { id: "v-modern", name: "Modern", description: "2010s onward" },
     ],
   },
 ];
@@ -433,12 +508,191 @@ const music: TimelineEvent[] = [
   { id: "m-045", title: "Renaissance – Beyoncé", year: 2022, wikipediaTitle: "Renaissance (Beyoncé album)", related: "Seventh studio album by Beyoncé", subcategories: ["m-modern-pop"] },
 ].map((e) => ({ ...e, category: "music" as const }));
 
+const art: TimelineEvent[] = [
+  // Renaissance
+  { id: "a-001", title: "Sistine Chapel ceiling completed", year: 1512, wikipediaTitle: "Sistine Chapel ceiling", related: "Painted by Michelangelo over four years", subcategories: ["a-renaissance"] },
+  { id: "a-002", title: "Birth of Venus", year: 1486, wikipediaTitle: "The Birth of Venus", related: "Sandro Botticelli", subcategories: ["a-renaissance"] },
+  { id: "a-003", title: "Mona Lisa", year: 1503, wikipediaTitle: "Mona Lisa", related: "Leonardo da Vinci", subcategories: ["a-renaissance"] },
+  { id: "a-004", title: "David (Michelangelo)", year: 1504, wikipediaTitle: "David (Michelangelo)", related: "Marble sculpture, Florence", subcategories: ["a-renaissance"] },
+  { id: "a-005", title: "The School of Athens", year: 1511, wikipediaTitle: "The School of Athens", related: "Fresco by Raphael in the Vatican", subcategories: ["a-renaissance"] },
+  { id: "a-006", title: "The Last Supper (Leonardo)", year: 1498, wikipediaTitle: "The Last Supper (Leonardo)", related: "Mural in Milan", subcategories: ["a-renaissance"] },
+
+  // Baroque & Romantic
+  { id: "a-007", title: "The Night Watch", year: 1642, wikipediaTitle: "The Night Watch", related: "Rembrandt's group portrait", subcategories: ["a-baroque-romantic"] },
+  { id: "a-008", title: "Las Meninas", year: 1656, wikipediaTitle: "Las Meninas", related: "Diego Velázquez", subcategories: ["a-baroque-romantic"] },
+  { id: "a-009", title: "The Raft of the Medusa", year: 1819, wikipediaTitle: "The Raft of the Medusa", related: "Théodore Géricault", subcategories: ["a-baroque-romantic"] },
+  { id: "a-010", title: "Liberty Leading the People", year: 1830, wikipediaTitle: "Liberty Leading the People", related: "Eugène Delacroix", subcategories: ["a-baroque-romantic"] },
+  { id: "a-011", title: "The Great Wave off Kanagawa", year: 1831, wikipediaTitle: "The Great Wave off Kanagawa", related: "Hokusai woodblock print", subcategories: ["a-baroque-romantic"] },
+
+  // Impressionism
+  { id: "a-012", title: "Impression, Sunrise", year: 1872, wikipediaTitle: "Impression, Sunrise", related: "Claude Monet — the painting that named a movement", subcategories: ["a-impressionism"] },
+  { id: "a-013", title: "A Sunday on La Grande Jatte", year: 1886, wikipediaTitle: "A Sunday on La Grande Jatte", related: "Georges Seurat", subcategories: ["a-impressionism"] },
+  { id: "a-014", title: "The Starry Night", year: 1889, wikipediaTitle: "The Starry Night", related: "Vincent van Gogh in Saint-Rémy", subcategories: ["a-impressionism"] },
+  { id: "a-015", title: "Water Lilies series begun", year: 1899, wikipediaTitle: "Water Lilies (Monet series)", related: "Monet's late-career pond paintings", subcategories: ["a-impressionism"] },
+  { id: "a-016", title: "The Kiss (Klimt)", year: 1908, wikipediaTitle: "The Kiss (Klimt)", related: "Gustav Klimt's gold-leaf icon", subcategories: ["a-impressionism"] },
+
+  // Modernist
+  { id: "a-017", title: "The Scream", year: 1893, wikipediaTitle: "The Scream", related: "Edvard Munch", subcategories: ["a-modernist"] },
+  { id: "a-018", title: "Les Demoiselles d'Avignon", year: 1907, wikipediaTitle: "Les Demoiselles d'Avignon", related: "Picasso ignites Cubism", subcategories: ["a-modernist"] },
+  { id: "a-019", title: "The Persistence of Memory", year: 1931, wikipediaTitle: "The Persistence of Memory", related: "Salvador Dalí — melting clocks", subcategories: ["a-modernist"] },
+  { id: "a-020", title: "Guernica", year: 1937, wikipediaTitle: "Guernica (Picasso)", related: "Picasso's response to the Spanish Civil War", subcategories: ["a-modernist"] },
+  { id: "a-021", title: "American Gothic", year: 1930, wikipediaTitle: "American Gothic", related: "Grant Wood — Iowa farmer and daughter", subcategories: ["a-modernist"] },
+
+  // Contemporary
+  { id: "a-022", title: "Campbell's Soup Cans", year: 1962, wikipediaTitle: "Campbell's Soup Cans", related: "Andy Warhol — Pop Art", subcategories: ["a-contemporary"] },
+  { id: "a-023", title: "Marilyn Diptych", year: 1962, wikipediaTitle: "Marilyn Diptych", related: "Warhol; silkscreen repetition", subcategories: ["a-contemporary"] },
+  { id: "a-024", title: "Untitled (Basquiat)", year: 1982, wikipediaTitle: "Untitled (1982 Basquiat painting)", related: "Jean-Michel Basquiat", subcategories: ["a-contemporary"] },
+  { id: "a-025", title: "Girl with Balloon", year: 2002, wikipediaTitle: "Girl with Balloon", related: "Banksy stencil works", subcategories: ["a-contemporary"] },
+  { id: "a-026", title: "Comedian (banana taped to wall)", year: 2019, wikipediaTitle: "Comedian (artwork)", related: "Maurizio Cattelan — banana + duct tape", subcategories: ["a-contemporary"] },
+].map((e) => ({ ...e, category: "art" as const }));
+
+const sports: TimelineEvent[] = [
+  // Olympics
+  { id: "s-001", title: "First modern Olympic Games", year: 1896, wikipediaTitle: "1896 Summer Olympics", related: "Athens hosts the inaugural Games", subcategories: ["s-olympics"] },
+  { id: "s-002", title: "Jesse Owens wins 4 golds in Berlin", year: 1936, wikipediaTitle: "Jesse Owens", related: "Track and field at the Nazi-hosted Games", subcategories: ["s-olympics"] },
+  { id: "s-003", title: "Tommie Smith & John Carlos protest", year: 1968, wikipediaTitle: "1968 Olympics Black Power salute", related: "Mexico City medal stand", subcategories: ["s-olympics"] },
+  { id: "s-004", title: "Munich Olympics massacre", year: 1972, wikipediaTitle: "Munich massacre", related: "Israeli athletes killed by Black September", subcategories: ["s-olympics"] },
+  { id: "s-005", title: "Miracle on Ice", year: 1980, wikipediaTitle: "Miracle on Ice", related: "USA hockey beats USSR at Lake Placid", subcategories: ["s-olympics"] },
+  { id: "s-006", title: "Beijing Summer Olympics", year: 2008, wikipediaTitle: "2008 Summer Olympics", related: "Phelps wins 8 golds", subcategories: ["s-olympics"] },
+
+  // FIFA World Cup
+  { id: "s-007", title: "First FIFA World Cup (Uruguay)", year: 1930, wikipediaTitle: "1930 FIFA World Cup", related: "Uruguay defeats Argentina in the final", subcategories: ["s-world-cup"] },
+  { id: "s-008", title: "Maracanazo — Uruguay shocks Brazil", year: 1950, wikipediaTitle: "Maracanazo", related: "Maracanã stadium silenced", subcategories: ["s-world-cup"] },
+  { id: "s-009", title: "England wins the World Cup", year: 1966, wikipediaTitle: "1966 FIFA World Cup Final", related: "Wembley; '4-2 to the lads in red'", subcategories: ["s-world-cup"] },
+  { id: "s-010", title: "Maradona's 'Hand of God'", year: 1986, wikipediaTitle: "Argentina v England (1986 FIFA World Cup)", related: "Argentina beats England; the goal of the century moments later", subcategories: ["s-world-cup"] },
+  { id: "s-011", title: "Spain wins its first World Cup", year: 2010, wikipediaTitle: "2010 FIFA World Cup Final", related: "Iniesta's extra-time goal vs the Netherlands", subcategories: ["s-world-cup"] },
+  { id: "s-012", title: "Messi lifts the World Cup", year: 2022, wikipediaTitle: "2022 FIFA World Cup Final", related: "Argentina beats France on penalties", subcategories: ["s-world-cup"] },
+
+  // Individual records
+  { id: "s-013", title: "Babe Ruth hits 60 home runs", year: 1927, wikipediaTitle: "1927 New York Yankees season", related: "Record stood until 1961", subcategories: ["s-records"] },
+  { id: "s-014", title: "Roger Bannister breaks the 4-minute mile", year: 1954, wikipediaTitle: "Four-minute mile", related: "Oxford running track, 3:59.4", subcategories: ["s-records"] },
+  { id: "s-015", title: "Wilt Chamberlain scores 100 points", year: 1962, wikipediaTitle: "Wilt Chamberlain's 100-point game", related: "Hershey, Pennsylvania; Warriors vs Knicks", subcategories: ["s-records"] },
+  { id: "s-016", title: "Bob Beamon's long jump", year: 1968, wikipediaTitle: "Bob Beamon", related: "8.90 m at Mexico City Olympics", subcategories: ["s-records"] },
+  { id: "s-017", title: "Usain Bolt 9.58s 100m world record", year: 2009, wikipediaTitle: "100 metres world record progression", related: "Berlin World Championships", subcategories: ["s-records"] },
+
+  // Tennis
+  { id: "s-018", title: "First Wimbledon Championships", year: 1877, wikipediaTitle: "1877 Wimbledon Championship", related: "All England Club", subcategories: ["s-tennis"] },
+  { id: "s-019", title: "Billie Jean King beats Bobby Riggs", year: 1973, wikipediaTitle: "Battle of the Sexes (tennis)", related: "Houston Astrodome 'Battle of the Sexes'", subcategories: ["s-tennis"] },
+  { id: "s-020", title: "Borg wins fifth Wimbledon in a row", year: 1980, wikipediaTitle: "1980 Wimbledon Championships – Men's singles final", related: "Defeats McEnroe in the tiebreaker classic", subcategories: ["s-tennis"] },
+  { id: "s-021", title: "Federer wins first Wimbledon", year: 2003, wikipediaTitle: "2003 Wimbledon Championships – Men's singles", related: "Roger Federer's first Grand Slam", subcategories: ["s-tennis"] },
+  { id: "s-022", title: "Serena Williams completes Career Grand Slam", year: 2003, wikipediaTitle: "Serena Williams", related: "Australian Open completes the set", subcategories: ["s-tennis"] },
+
+  // Boxing
+  { id: "s-023", title: "Fight of the Century — Ali vs Frazier", year: 1971, wikipediaTitle: "Fight of the Century", related: "Madison Square Garden", subcategories: ["s-boxing"] },
+  { id: "s-024", title: "Rumble in the Jungle", year: 1974, wikipediaTitle: "The Rumble in the Jungle", related: "Ali beats Foreman in Kinshasa, Zaire", subcategories: ["s-boxing"] },
+  { id: "s-025", title: "Thrilla in Manila", year: 1975, wikipediaTitle: "Thrilla in Manila", related: "Ali vs Frazier III", subcategories: ["s-boxing"] },
+  { id: "s-026", title: "Mike Tyson becomes heavyweight champion", year: 1986, wikipediaTitle: "Mike Tyson", related: "Youngest heavyweight champion ever at 20", subcategories: ["s-boxing"] },
+].map((e) => ({ ...e, category: "sports" as const }));
+
+const science: TimelineEvent[] = [
+  // Astronomy
+  { id: "sc-001", title: "Galileo's telescopic observations", year: 1610, wikipediaTitle: "Sidereus Nuncius", related: "Moons of Jupiter, craters of the Moon", subcategories: ["sc-astronomy"] },
+  { id: "sc-002", title: "Kepler's laws of planetary motion", year: 1609, wikipediaTitle: "Kepler's laws of planetary motion", related: "Astronomia nova", subcategories: ["sc-astronomy"] },
+  { id: "sc-003", title: "Newton's Principia Mathematica", year: 1687, wikipediaTitle: "Philosophiæ Naturalis Principia Mathematica", related: "Laws of motion and universal gravitation", subcategories: ["sc-astronomy", "sc-physics"] },
+  { id: "sc-004", title: "Hubble's expanding universe", year: 1929, wikipediaTitle: "Hubble's law", related: "Redshift–distance relation", subcategories: ["sc-astronomy"] },
+  { id: "sc-005", title: "First exoplanet around a Sun-like star", year: 1995, wikipediaTitle: "51 Pegasi b", related: "Mayor and Queloz", subcategories: ["sc-astronomy"] },
+  { id: "sc-006", title: "First image of a black hole", year: 2019, wikipediaTitle: "Messier 87", related: "Event Horizon Telescope, M87*", subcategories: ["sc-astronomy"] },
+
+  // Physics
+  { id: "sc-007", title: "Special relativity", year: 1905, wikipediaTitle: "Special relativity", related: "Einstein's annus mirabilis", subcategories: ["sc-physics"] },
+  { id: "sc-008", title: "Heisenberg uncertainty principle", year: 1927, wikipediaTitle: "Uncertainty principle", related: "Foundations of quantum mechanics", subcategories: ["sc-physics"] },
+  { id: "sc-009", title: "Discovery of the neutron", year: 1932, wikipediaTitle: "James Chadwick", related: "James Chadwick", subcategories: ["sc-physics"] },
+  { id: "sc-010", title: "Direct detection of gravitational waves", year: 2015, wikipediaTitle: "First observation of gravitational waves", related: "LIGO detects a binary black hole merger", subcategories: ["sc-physics"] },
+
+  // Biology
+  { id: "sc-011", title: "On the Origin of Species published", year: 1859, wikipediaTitle: "On the Origin of Species", related: "Charles Darwin", subcategories: ["sc-biology"] },
+  { id: "sc-012", title: "Mendel's laws of inheritance", year: 1866, wikipediaTitle: "Gregor Mendel", related: "Pea-plant experiments", subcategories: ["sc-biology"] },
+  { id: "sc-013", title: "Discovery of viruses", year: 1892, wikipediaTitle: "Virus", related: "Ivanovsky filters tobacco mosaic disease", subcategories: ["sc-biology"] },
+  { id: "sc-014", title: "Discovery of bacteriophages", year: 1915, wikipediaTitle: "Bacteriophage", related: "Twort and d'Hérelle, virus-eating bacteria", subcategories: ["sc-biology"] },
+
+  // Chemistry
+  { id: "sc-015", title: "Mendeleev's periodic table", year: 1869, wikipediaTitle: "Periodic table", related: "Predicted gaps for undiscovered elements", subcategories: ["sc-chemistry"] },
+  { id: "sc-016", title: "Curie isolates radium and polonium", year: 1898, wikipediaTitle: "Marie Curie", related: "Marie and Pierre Curie", subcategories: ["sc-chemistry"] },
+  { id: "sc-017", title: "Haber–Bosch process", year: 1910, wikipediaTitle: "Haber process", related: "Ammonia synthesis enables modern fertilizer", subcategories: ["sc-chemistry"] },
+  { id: "sc-018", title: "Buckminsterfullerene (C60) discovered", year: 1985, wikipediaTitle: "Buckminsterfullerene", related: "Kroto, Curl, Smalley", subcategories: ["sc-chemistry"] },
+
+  // Climate science
+  { id: "sc-019", title: "Arrhenius links CO₂ to surface temperature", year: 1896, wikipediaTitle: "Svante Arrhenius", related: "First quantitative greenhouse-effect calculation", subcategories: ["sc-climate"] },
+  { id: "sc-020", title: "Keeling Curve begins", year: 1958, wikipediaTitle: "Keeling Curve", related: "Continuous CO₂ measurements at Mauna Loa", subcategories: ["sc-climate"] },
+  { id: "sc-021", title: "IPCC founded", year: 1988, wikipediaTitle: "Intergovernmental Panel on Climate Change", related: "Intergovernmental Panel on Climate Change", subcategories: ["sc-climate"] },
+  { id: "sc-022", title: "Paris Agreement adopted", year: 2015, wikipediaTitle: "Paris Agreement", related: "UNFCCC framework limits warming below 2 °C", subcategories: ["sc-climate"] },
+].map((e) => ({ ...e, category: "science" as const }));
+
+const architecture: TimelineEvent[] = [
+  // Ancient & medieval
+  { id: "ar-001", title: "Great Pyramid of Giza completed", year: -2560, wikipediaTitle: "Great Pyramid of Giza", related: "Tomb of Khufu", subcategories: ["ar-ancient"] },
+  { id: "ar-002", title: "Parthenon completed", year: -438, wikipediaTitle: "Parthenon", related: "Atop the Athenian Acropolis", subcategories: ["ar-ancient"] },
+  { id: "ar-003", title: "Pantheon rebuilt by Hadrian", year: 126, wikipediaTitle: "Pantheon, Rome", related: "Roman concrete dome", subcategories: ["ar-ancient"] },
+  { id: "ar-004", title: "Hagia Sophia consecrated", year: 537, wikipediaTitle: "Hagia Sophia", related: "Constantinople; later a mosque", subcategories: ["ar-ancient"] },
+  { id: "ar-005", title: "Notre-Dame de Paris begun", year: 1163, wikipediaTitle: "Notre-Dame de Paris", related: "Gothic cathedral on the Île de la Cité", subcategories: ["ar-ancient"] },
+  { id: "ar-006", title: "Angkor Wat completed", year: 1150, wikipediaTitle: "Angkor Wat", related: "Khmer Empire, Cambodia", subcategories: ["ar-ancient"] },
+
+  // Renaissance & early modern
+  { id: "ar-007", title: "Florence Cathedral dome completed", year: 1436, wikipediaTitle: "Florence Cathedral", related: "Filippo Brunelleschi", subcategories: ["ar-renaissance"] },
+  { id: "ar-008", title: "St Peter's Basilica consecrated", year: 1626, wikipediaTitle: "St. Peter's Basilica", related: "Bramante, Michelangelo, Bernini", subcategories: ["ar-renaissance"] },
+  { id: "ar-009", title: "Taj Mahal completed", year: 1653, wikipediaTitle: "Taj Mahal", related: "Mughal emperor Shah Jahan", subcategories: ["ar-renaissance"] },
+
+  // Modern
+  { id: "ar-010", title: "Eiffel Tower completed", year: 1889, wikipediaTitle: "Eiffel Tower", related: "Paris Exposition; tallest structure for 41 years", subcategories: ["ar-modern"] },
+  { id: "ar-011", title: "Empire State Building opens", year: 1931, wikipediaTitle: "Empire State Building", related: "Manhattan; world's tallest until 1970", subcategories: ["ar-modern"] },
+  { id: "ar-012", title: "Sydney Opera House opens", year: 1973, wikipediaTitle: "Sydney Opera House", related: "Jørn Utzon's expressionist sail-shells", subcategories: ["ar-modern"] },
+  { id: "ar-013", title: "CN Tower opens", year: 1976, wikipediaTitle: "CN Tower", related: "Toronto; world's tallest free-standing structure for 31 years", subcategories: ["ar-modern"] },
+
+  // Contemporary
+  { id: "ar-014", title: "Guggenheim Museum Bilbao opens", year: 1997, wikipediaTitle: "Guggenheim Museum Bilbao", related: "Frank Gehry titanium curves", subcategories: ["ar-contemporary"] },
+  { id: "ar-015", title: "Burj Khalifa opens", year: 2010, wikipediaTitle: "Burj Khalifa", related: "Dubai; world's tallest at 828 m", subcategories: ["ar-contemporary"] },
+  { id: "ar-016", title: "Shanghai Tower completed", year: 2015, wikipediaTitle: "Shanghai Tower", related: "Twisting supertall in Pudong", subcategories: ["ar-contemporary"] },
+].map((e) => ({ ...e, category: "architecture" as const }));
+
+const games: TimelineEvent[] = [
+  // Arcade
+  { id: "v-001", title: "Pong released", year: 1972, wikipediaTitle: "Pong", related: "Atari's seminal arcade hit", subcategories: ["v-arcade"] },
+  { id: "v-002", title: "Space Invaders", year: 1978, wikipediaTitle: "Space Invaders", related: "Taito; the arcade icon", subcategories: ["v-arcade"] },
+  { id: "v-003", title: "Pac-Man", year: 1980, wikipediaTitle: "Pac-Man", related: "Namco; pop-culture phenomenon", subcategories: ["v-arcade"] },
+  { id: "v-004", title: "Donkey Kong", year: 1981, wikipediaTitle: "Donkey Kong (1981 video game)", related: "Introduces Mario (as Jumpman)", subcategories: ["v-arcade"] },
+  { id: "v-005", title: "Street Fighter II", year: 1991, wikipediaTitle: "Street Fighter II", related: "Defines the modern fighting game", subcategories: ["v-arcade"] },
+
+  // Early consoles
+  { id: "v-006", title: "Atari 2600 released", year: 1977, wikipediaTitle: "Atari 2600", related: "Cartridge-based home console", subcategories: ["v-console-early"] },
+  { id: "v-007", title: "Tetris released", year: 1984, wikipediaTitle: "Tetris", related: "Alexey Pajitnov in the Soviet Union", subcategories: ["v-console-early"] },
+  { id: "v-008", title: "Nintendo Entertainment System launches in NA", year: 1985, wikipediaTitle: "Nintendo Entertainment System", related: "Revives the home console market", subcategories: ["v-console-early"] },
+  { id: "v-009", title: "Super Mario Bros.", year: 1985, wikipediaTitle: "Super Mario Bros.", related: "NES launch title; sells 40M+ copies", subcategories: ["v-console-early"] },
+  { id: "v-010", title: "Game Boy released", year: 1989, wikipediaTitle: "Game Boy", related: "Handheld revolution; ships with Tetris", subcategories: ["v-console-early"] },
+
+  // 90s
+  { id: "v-011", title: "Doom", year: 1993, wikipediaTitle: "Doom (1993 video game)", related: "id Software; defines the FPS", subcategories: ["v-90s"] },
+  { id: "v-012", title: "Final Fantasy VII", year: 1997, wikipediaTitle: "Final Fantasy VII", related: "PlayStation; JRPG mainstream", subcategories: ["v-90s"] },
+  { id: "v-013", title: "GoldenEye 007", year: 1997, wikipediaTitle: "GoldenEye 007 (1997 video game)", related: "N64; console FPS multiplayer", subcategories: ["v-90s"] },
+  { id: "v-014", title: "StarCraft", year: 1998, wikipediaTitle: "StarCraft", related: "Blizzard RTS; esports cornerstone", subcategories: ["v-90s"] },
+  { id: "v-015", title: "Half-Life", year: 1998, wikipediaTitle: "Half-Life (video game)", related: "Valve; narrative-driven FPS", subcategories: ["v-90s"] },
+
+  // 2000s
+  { id: "v-016", title: "Grand Theft Auto III", year: 2001, wikipediaTitle: "Grand Theft Auto III", related: "Rockstar; open-world template", subcategories: ["v-2000s"] },
+  { id: "v-017", title: "Halo: Combat Evolved", year: 2001, wikipediaTitle: "Halo: Combat Evolved", related: "Xbox launch title", subcategories: ["v-2000s"] },
+  { id: "v-018", title: "World of Warcraft launches", year: 2004, wikipediaTitle: "World of Warcraft", related: "MMORPG peak; 12M+ subscribers", subcategories: ["v-2000s"] },
+  { id: "v-019", title: "Wii released", year: 2006, wikipediaTitle: "Wii", related: "Motion controls bring new audiences", subcategories: ["v-2000s"] },
+  { id: "v-020", title: "Portal", year: 2007, wikipediaTitle: "Portal (video game)", related: "Valve; puzzle classic + 'the cake is a lie'", subcategories: ["v-2000s"] },
+
+  // Modern
+  { id: "v-021", title: "Minecraft full release", year: 2011, wikipediaTitle: "Minecraft", related: "Markus Persson; best-selling game ever", subcategories: ["v-modern"] },
+  { id: "v-022", title: "Dark Souls", year: 2011, wikipediaTitle: "Dark Souls", related: "FromSoftware; the 'soulslike' genre", subcategories: ["v-modern"] },
+  { id: "v-023", title: "Grand Theft Auto V", year: 2013, wikipediaTitle: "Grand Theft Auto V", related: "Highest-grossing entertainment release ever", subcategories: ["v-modern"] },
+  { id: "v-024", title: "Breath of the Wild", year: 2017, wikipediaTitle: "The Legend of Zelda: Breath of the Wild", related: "Nintendo Switch launch title", subcategories: ["v-modern"] },
+  { id: "v-025", title: "Elden Ring", year: 2022, wikipediaTitle: "Elden Ring", related: "FromSoftware + George R. R. Martin", subcategories: ["v-modern"] },
+  { id: "v-026", title: "Baldur's Gate 3", year: 2023, wikipediaTitle: "Baldur's Gate 3", related: "Larian Studios; Game of the Year", subcategories: ["v-modern"] },
+].map((e) => ({ ...e, category: "games" as const }));
+
 export const ALL_EVENTS: TimelineEvent[] = [
   ...films,
   ...books,
   ...inventions,
   ...wars,
   ...music,
+  ...art,
+  ...sports,
+  ...science,
+  ...architecture,
+  ...games,
 ];
 
 export const EVENTS_BY_SUBCATEGORY: Record<string, TimelineEvent[]> = (() => {

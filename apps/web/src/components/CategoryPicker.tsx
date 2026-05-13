@@ -19,6 +19,7 @@ import type { CategoryId, Difficulty } from "@/game/types";
 type Props = {
   selected: string[];
   difficulty: Difficulty;
+  loading?: boolean;
   onToggleSub: (subId: string) => void;
   onToggleCategory: (id: CategoryId) => void;
   onChangeDifficulty: (d: Difficulty) => void;
@@ -39,6 +40,7 @@ const DIFFICULTIES: Array<{
 export default function CategoryPicker({
   selected,
   difficulty,
+  loading,
   onToggleSub,
   onToggleCategory,
   onChangeDifficulty,
@@ -149,17 +151,37 @@ export default function CategoryPicker({
         variant="contained"
         size="large"
         onClick={onStart}
-        disabled={total < 2}
+        disabled={total < 2 || loading}
         fullWidth
         sx={{
           py: 1.5,
           fontSize: 13,
           letterSpacing: "0.22em",
-          mb: 4,
+          mb: 1,
         }}
       >
-        Start game — {total} event{total === 1 ? "" : "s"}
+        {loading
+          ? "Loading Wikipedia events…"
+          : `Start game — ${total} event${total === 1 ? "" : "s"}`}
       </Button>
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          textAlign: "center",
+          color: "text.secondary",
+          fontFamily: 'var(--font-jetbrains), monospace',
+          fontSize: 10,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          mb: 4,
+          opacity: loading ? 1 : 0.6,
+        }}
+      >
+        {loading
+          ? "Querying Wikidata · this can take a few seconds"
+          : "Bundled pool · live Wikidata events will join when you start"}
+      </Typography>
 
       {/* Categories — collapsible */}
       <Box
