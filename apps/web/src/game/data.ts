@@ -1,0 +1,474 @@
+import { BookOpen, Disc3, Film, Landmark, Lightbulb } from "lucide-react";
+import type { Category, CategoryId, SubCategory, TimelineEvent } from "./types";
+
+export const CATEGORIES: Category[] = [
+  {
+    id: "films",
+    name: "Films",
+    Icon: Film,
+    description: "Cinema, from silents to streaming.",
+    subcategories: [
+      { id: "f-classics", name: "Pre-color classics", description: "Silents & early sound" },
+      { id: "f-golden-age", name: "Hollywood golden age", description: "40s and 50s" },
+      { id: "f-new-hollywood", name: "New Hollywood", description: "Late 60s and 70s auteurs" },
+      { id: "f-best-picture", name: "Best Picture winners", description: "Oscar laureates across eras" },
+      { id: "f-blockbusters", name: "Blockbusters", description: "Cultural juggernauts" },
+      { id: "f-cult", name: "Cult & weird", description: "Misfits with a following" },
+      { id: "f-international", name: "International masters", description: "Beyond Hollywood" },
+      { id: "f-animation", name: "Animation", description: "Hand-drawn & computer" },
+      { id: "f-bad", name: "Famously bad", description: "Razzies, flops, beloved disasters" },
+    ],
+  },
+  {
+    id: "books",
+    name: "Books",
+    Icon: BookOpen,
+    description: "Words that left a mark.",
+    subcategories: [
+      { id: "b-19c", name: "19th-century classics", description: "From Austen to Wilde" },
+      { id: "b-modernist", name: "Modernist masterpieces", description: "Joyce, Woolf, the early 20th" },
+      { id: "b-dystopian", name: "Dystopian", description: "Worlds gone wrong" },
+      { id: "b-prizes", name: "Booker & Pulitzer", description: "Prize-winning fiction" },
+      { id: "b-fantasy", name: "Fantasy & sci-fi", description: "Genre landmarks" },
+      { id: "b-postcolonial", name: "Postcolonial & global", description: "Voices from beyond the canon" },
+      { id: "b-coming-of-age", name: "Coming-of-age", description: "Growing up, fictionally" },
+      { id: "b-21c", name: "21st-century literary", description: "Modern essentials" },
+    ],
+  },
+  {
+    id: "inventions",
+    name: "Inventions",
+    Icon: Lightbulb,
+    description: "Discoveries that reshaped the world.",
+    subcategories: [
+      { id: "i-medicine", name: "Medicine & biology", description: "Vaccines, drugs, biology" },
+      { id: "i-comm", name: "Communication & media", description: "Print, radio, internet" },
+      { id: "i-transport", name: "Transportation", description: "Land, sea, and air" },
+      { id: "i-computing", name: "Computing", description: "From transistor to AI" },
+      { id: "i-physics", name: "Physics & energy", description: "Power and the cosmos" },
+      { id: "i-space", name: "Space", description: "Above the atmosphere" },
+      { id: "i-genetics", name: "Genetics", description: "DNA and beyond" },
+    ],
+  },
+  {
+    id: "wars",
+    name: "Wars & Events",
+    Icon: Landmark,
+    description: "The shape of history.",
+    subcategories: [
+      { id: "w-ancient", name: "Ancient & medieval", description: "Before 1500" },
+      { id: "w-revolutions", name: "Revolutions", description: "Regime changes by force" },
+      { id: "w-world-wars", name: "World wars", description: "1914–1945" },
+      { id: "w-cold-war", name: "Cold War", description: "1947–1991" },
+      { id: "w-modern", name: "Modern (post-2000)", description: "21st century crises" },
+      { id: "w-treaties", name: "Treaties & milestones", description: "Documents that mattered" },
+    ],
+  },
+  {
+    id: "music",
+    name: "Music",
+    Icon: Disc3,
+    description: "Albums that bent the timeline.",
+    subcategories: [
+      { id: "m-jazz", name: "Jazz era", description: "Pre-60s, modal & cool" },
+      { id: "m-british", name: "British invasion", description: "60s UK takeover" },
+      { id: "m-singer-songwriter", name: "Singer-songwriter", description: "Songs from a single voice" },
+      { id: "m-disco", name: "Disco & funk", description: "70s grooves" },
+      { id: "m-rock", name: "Classic rock & metal", description: "Big riffs, bigger venues" },
+      { id: "m-synth", name: "Synth & new wave", description: "80s electronics" },
+      { id: "m-hiphop", name: "Hip-hop landmarks", description: "Boom-bap to trap" },
+      { id: "m-modern-pop", name: "Modern pop", description: "2000s onward" },
+    ],
+  },
+];
+
+export const CATEGORY_BY_ID: Record<CategoryId, Category> = CATEGORIES.reduce(
+  (acc, c) => {
+    acc[c.id] = c;
+    return acc;
+  },
+  {} as Record<CategoryId, Category>,
+);
+
+export const SUBCATEGORY_BY_ID: Record<string, SubCategory & { category: CategoryId }> =
+  CATEGORIES.reduce(
+    (acc, c) => {
+      for (const sub of c.subcategories) {
+        acc[sub.id] = { ...sub, category: c.id };
+      }
+      return acc;
+    },
+    {} as Record<string, SubCategory & { category: CategoryId }>,
+  );
+
+const films: TimelineEvent[] = [
+  // Pre-color classics
+  { id: "f-001", title: "The Birth of a Nation", year: 1915, related: "Directed by D. W. Griffith", subcategories: ["f-classics"] },
+  { id: "f-002", title: "The Cabinet of Dr. Caligari", year: 1920, related: "German Expressionist horror", subcategories: ["f-classics", "f-cult"] },
+  { id: "f-003", title: "Nosferatu", year: 1922, wikipediaTitle: "Nosferatu", related: "Murnau's unauthorized Dracula", subcategories: ["f-classics", "f-cult"] },
+  { id: "f-004", title: "The Gold Rush", year: 1925, wikipediaTitle: "The Gold Rush", related: "Chaplin's silent comedy", subcategories: ["f-classics"] },
+  { id: "f-005", title: "Metropolis", year: 1927, wikipediaTitle: "Metropolis (1927 film)", related: "Fritz Lang's expressionist epic", subcategories: ["f-classics", "f-cult"] },
+  { id: "f-006", title: "The Jazz Singer", year: 1927, wikipediaTitle: "The Jazz Singer", related: "First feature with synchronized dialogue", subcategories: ["f-classics"] },
+  { id: "f-007", title: "City Lights", year: 1931, related: "Chaplin in the sound era", subcategories: ["f-classics"] },
+  { id: "f-008", title: "M", year: 1931, wikipediaTitle: "M (1931 film)", related: "Fritz Lang, Peter Lorre", subcategories: ["f-classics", "f-international"] },
+  { id: "f-009", title: "King Kong", year: 1933, wikipediaTitle: "King Kong (1933 film)", related: "Empire State Building climax", subcategories: ["f-classics", "f-blockbusters"] },
+
+  // Golden age + Best Picture
+  { id: "f-010", title: "It Happened One Night", year: 1934, related: "Frank Capra; swept the Oscars", subcategories: ["f-golden-age", "f-best-picture"] },
+  { id: "f-011", title: "Gone with the Wind", year: 1939, wikipediaTitle: "Gone with the Wind (film)", related: "Vivien Leigh, Clark Gable", subcategories: ["f-golden-age", "f-best-picture", "f-blockbusters"] },
+  { id: "f-012", title: "The Wizard of Oz", year: 1939, wikipediaTitle: "The Wizard of Oz (1939 film)", related: "Judy Garland follows the yellow brick road", subcategories: ["f-golden-age", "f-blockbusters"] },
+  { id: "f-013", title: "Citizen Kane", year: 1941, related: "Orson Welles' debut, often called the GOAT", subcategories: ["f-golden-age"] },
+  { id: "f-014", title: "Casablanca", year: 1942, wikipediaTitle: "Casablanca (film)", related: "Bogart and Bergman in wartime Morocco", subcategories: ["f-golden-age", "f-best-picture"] },
+  { id: "f-015", title: "It's a Wonderful Life", year: 1946, related: "Capra, James Stewart, second-life parable", subcategories: ["f-golden-age"] },
+  { id: "f-016", title: "Sunset Boulevard", year: 1950, related: "Billy Wilder's Hollywood gothic", subcategories: ["f-golden-age"] },
+  { id: "f-017", title: "Singin' in the Rain", year: 1952, related: "Gene Kelly musical about the silent-to-sound shift", subcategories: ["f-golden-age"] },
+  { id: "f-018", title: "Rear Window", year: 1954, related: "Hitchcock + Jimmy Stewart in a wheelchair", subcategories: ["f-golden-age", "f-cult"] },
+  { id: "f-019", title: "Seven Samurai", year: 1954, related: "Kurosawa's epic", subcategories: ["f-international"] },
+  { id: "f-020", title: "12 Angry Men", year: 1957, related: "Sidney Lumet jury drama", subcategories: ["f-golden-age"] },
+  { id: "f-021", title: "Some Like It Hot", year: 1959, related: "Wilder, Marilyn Monroe, gender-swap caper", subcategories: ["f-golden-age"] },
+  { id: "f-022", title: "North by Northwest", year: 1959, related: "Hitchcock chase film with Cary Grant", subcategories: ["f-golden-age", "f-blockbusters"] },
+  { id: "f-023", title: "Psycho", year: 1960, wikipediaTitle: "Psycho (1960 film)", related: "Hitchcock; Bates Motel", subcategories: ["f-golden-age", "f-cult"] },
+  { id: "f-024", title: "Lawrence of Arabia", year: 1962, related: "David Lean epic; Peter O'Toole", subcategories: ["f-best-picture"] },
+  { id: "f-025", title: "2001: A Space Odyssey", year: 1968, related: "Kubrick + Clarke", subcategories: ["f-new-hollywood", "f-cult"] },
+
+  // New Hollywood
+  { id: "f-026", title: "Easy Rider", year: 1969, related: "Hopper, Fonda, Nicholson on motorcycles", subcategories: ["f-new-hollywood", "f-cult"] },
+  { id: "f-027", title: "The Godfather", year: 1972, related: "Coppola; Brando as Don Corleone", subcategories: ["f-new-hollywood", "f-best-picture"] },
+  { id: "f-028", title: "The Exorcist", year: 1973, related: "Friedkin's possession horror", subcategories: ["f-new-hollywood", "f-blockbusters"] },
+  { id: "f-029", title: "Chinatown", year: 1974, related: "Polanski, Nicholson, LA noir", subcategories: ["f-new-hollywood"] },
+  { id: "f-030", title: "Jaws", year: 1975, wikipediaTitle: "Jaws (film)", related: "Spielberg invents the summer blockbuster", subcategories: ["f-new-hollywood", "f-blockbusters"] },
+  { id: "f-031", title: "One Flew Over the Cuckoo's Nest", year: 1975, related: "Forman, Nicholson, mental hospital", subcategories: ["f-new-hollywood", "f-best-picture"] },
+  { id: "f-032", title: "Taxi Driver", year: 1976, related: "Scorsese, De Niro: 'You talkin' to me?'", subcategories: ["f-new-hollywood"] },
+  { id: "f-033", title: "Star Wars", year: 1977, wikipediaTitle: "Star Wars (film)", related: "Lucas; A New Hope", subcategories: ["f-new-hollywood", "f-blockbusters"] },
+  { id: "f-034", title: "Annie Hall", year: 1977, related: "Woody Allen + Diane Keaton; won Best Picture", subcategories: ["f-new-hollywood", "f-best-picture"] },
+  { id: "f-035", title: "Apocalypse Now", year: 1979, related: "Coppola in Vietnam; 'The horror, the horror.'", subcategories: ["f-new-hollywood"] },
+  { id: "f-036", title: "Raging Bull", year: 1980, related: "Scorsese + De Niro as Jake LaMotta", subcategories: ["f-new-hollywood"] },
+  { id: "f-037", title: "Blade Runner", year: 1982, related: "Ridley Scott's neo-noir sci-fi", subcategories: ["f-cult"] },
+  { id: "f-038", title: "E.T. the Extra-Terrestrial", year: 1982, related: "Spielberg; bicycles silhouetted against the moon", subcategories: ["f-blockbusters"] },
+
+  // Blockbusters + later Best Picture
+  { id: "f-039", title: "Back to the Future", year: 1985, related: "DeLorean, flux capacitor, Michael J. Fox", subcategories: ["f-blockbusters"] },
+  { id: "f-040", title: "Die Hard", year: 1988, related: "Bruce Willis at Nakatomi Plaza", subcategories: ["f-blockbusters"] },
+  { id: "f-041", title: "Jurassic Park", year: 1993, related: "Spielberg; dinosaurs via CGI", subcategories: ["f-blockbusters"] },
+  { id: "f-042", title: "Schindler's List", year: 1993, related: "Spielberg; Holocaust drama; won Best Picture", subcategories: ["f-best-picture"] },
+  { id: "f-043", title: "Pulp Fiction", year: 1994, related: "Tarantino's non-linear crime ensemble", subcategories: ["f-cult"] },
+  { id: "f-044", title: "Forrest Gump", year: 1994, related: "Robert Zemeckis, Tom Hanks", subcategories: ["f-best-picture", "f-blockbusters"] },
+  { id: "f-045", title: "Titanic", year: 1997, wikipediaTitle: "Titanic (1997 film)", related: "Cameron; DiCaprio and Winslet", subcategories: ["f-best-picture", "f-blockbusters"] },
+  { id: "f-046", title: "The Matrix", year: 1999, related: "The Wachowskis; red pill, bullet time", subcategories: ["f-blockbusters", "f-cult"] },
+  { id: "f-047", title: "The Lord of the Rings: The Fellowship of the Ring", year: 2001, wikipediaTitle: "The Lord of the Rings: The Fellowship of the Ring (film)", related: "Peter Jackson begins the trilogy", subcategories: ["f-blockbusters"] },
+  { id: "f-048", title: "The Lord of the Rings: The Return of the King", year: 2003, wikipediaTitle: "The Lord of the Rings: The Return of the King", related: "Peter Jackson; swept the 76th Academy Awards", subcategories: ["f-best-picture", "f-blockbusters"] },
+  { id: "f-049", title: "The Departed", year: 2006, related: "Scorsese; Boston mob; Best Picture", subcategories: ["f-best-picture"] },
+  { id: "f-050", title: "No Country for Old Men", year: 2007, related: "Coen brothers; Cormac McCarthy adaptation; Best Picture", subcategories: ["f-best-picture"] },
+  { id: "f-051", title: "Slumdog Millionaire", year: 2008, related: "Danny Boyle; Mumbai; Best Picture", subcategories: ["f-best-picture", "f-international"] },
+  { id: "f-052", title: "Avatar", year: 2009, wikipediaTitle: "Avatar (2009 film)", related: "Cameron; Pandora; world's highest grosser", subcategories: ["f-blockbusters"] },
+  { id: "f-053", title: "Birdman", year: 2014, wikipediaTitle: "Birdman (film)", related: "Iñárritu; Michael Keaton; Best Picture", subcategories: ["f-best-picture", "f-international"] },
+  { id: "f-054", title: "Moonlight", year: 2016, wikipediaTitle: "Moonlight (2016 film)", related: "Barry Jenkins; coming-of-age in Miami; Best Picture", subcategories: ["f-best-picture"] },
+  { id: "f-055", title: "Parasite", year: 2019, wikipediaTitle: "Parasite (2019 film)", related: "Bong Joon-ho; first non-English Best Picture", subcategories: ["f-best-picture", "f-international"] },
+  { id: "f-056", title: "Everything Everywhere All at Once", year: 2022, related: "Daniels; Michelle Yeoh; Best Picture", subcategories: ["f-best-picture", "f-cult"] },
+
+  // International masters
+  { id: "f-057", title: "Bicycle Thieves", year: 1948, related: "De Sica; Italian neorealism", subcategories: ["f-international"] },
+  { id: "f-058", title: "Rashomon", year: 1950, related: "Kurosawa; multiple-perspective crime drama", subcategories: ["f-international"] },
+  { id: "f-059", title: "The 400 Blows", year: 1959, related: "Truffaut; French New Wave begins", subcategories: ["f-international"] },
+  { id: "f-060", title: "8½", year: 1963, related: "Fellini's self-reflexive masterpiece", subcategories: ["f-international"] },
+  { id: "f-061", title: "Persona", year: 1966, wikipediaTitle: "Persona (1966 film)", related: "Bergman, Liv Ullmann, identity drama", subcategories: ["f-international", "f-cult"] },
+  { id: "f-062", title: "Stalker", year: 1979, wikipediaTitle: "Stalker (1979 film)", related: "Tarkovsky's Zone", subcategories: ["f-international", "f-cult"] },
+  { id: "f-063", title: "In the Mood for Love", year: 2000, related: "Wong Kar-wai; Hong Kong romance", subcategories: ["f-international"] },
+
+  // Animation
+  { id: "f-064", title: "Snow White and the Seven Dwarfs", year: 1937, related: "First feature-length cel-animated film", subcategories: ["f-animation"] },
+  { id: "f-065", title: "Fantasia", year: 1940, related: "Disney's classical-music anthology", subcategories: ["f-animation"] },
+  { id: "f-066", title: "Akira", year: 1988, wikipediaTitle: "Akira (1988 film)", related: "Otomo; neo-Tokyo cyberpunk anime", subcategories: ["f-animation", "f-international", "f-cult"] },
+  { id: "f-067", title: "The Lion King", year: 1994, wikipediaTitle: "The Lion King", related: "Disney; Hamlet on the savanna", subcategories: ["f-animation", "f-blockbusters"] },
+  { id: "f-068", title: "Toy Story", year: 1995, related: "Pixar; first fully computer-animated feature", subcategories: ["f-animation", "f-blockbusters"] },
+  { id: "f-069", title: "Spirited Away", year: 2001, related: "Miyazaki; Studio Ghibli", subcategories: ["f-animation", "f-international"] },
+  { id: "f-070", title: "WALL-E", year: 2008, related: "Pixar; lonely cleanup robot", subcategories: ["f-animation"] },
+  { id: "f-071", title: "Spider-Man: Into the Spider-Verse", year: 2018, related: "Sony Pictures Animation; multiverse styles", subcategories: ["f-animation"] },
+
+  // Famously bad
+  { id: "f-072", title: "Plan 9 from Outer Space", year: 1959, related: "Ed Wood; often called the worst film ever made", subcategories: ["f-bad", "f-cult"] },
+  { id: "f-073", title: "Showgirls", year: 1995, related: "Verhoeven flop turned camp classic", subcategories: ["f-bad", "f-cult"] },
+  { id: "f-074", title: "Battlefield Earth", year: 2000, related: "Travolta, L. Ron Hubbard adapt; multiple Razzies", subcategories: ["f-bad"] },
+  { id: "f-075", title: "The Room", year: 2003, wikipediaTitle: "The Room (2003 film)", related: "Tommy Wiseau; 'Oh hi, Mark.'", subcategories: ["f-bad", "f-cult"] },
+  { id: "f-076", title: "Gigli", year: 2003, related: "Affleck and Lopez; box-office disaster", subcategories: ["f-bad"] },
+  { id: "f-077", title: "Catwoman", year: 2004, wikipediaTitle: "Catwoman (film)", related: "Halle Berry; Razzie sweeper", subcategories: ["f-bad"] },
+  { id: "f-078", title: "Jack and Jill", year: 2011, wikipediaTitle: "Jack and Jill (2011 film)", related: "Adam Sandler swept the Razzies", subcategories: ["f-bad"] },
+  { id: "f-079", title: "Movie 43", year: 2013, related: "All-star sketch anthology critics savaged", subcategories: ["f-bad"] },
+  { id: "f-080", title: "Cats", year: 2019, wikipediaTitle: "Cats (2019 film)", related: "Tom Hooper; uncanny digital fur technology", subcategories: ["f-bad"] },
+  { id: "f-081", title: "Morbius", year: 2022, related: "Jared Leto; 'It's Morbin' time' meme", subcategories: ["f-bad"] },
+].map((e) => ({ ...e, category: "films" as const }));
+
+const books: TimelineEvent[] = [
+  // 19th-century classics
+  { id: "b-001", title: "Pride and Prejudice", year: 1813, related: "Jane Austen", subcategories: ["b-19c"] },
+  { id: "b-002", title: "Frankenstein", year: 1818, related: "Mary Shelley", subcategories: ["b-19c", "b-fantasy"] },
+  { id: "b-003", title: "Oliver Twist", year: 1838, related: "Charles Dickens; Victorian London", subcategories: ["b-19c", "b-coming-of-age"] },
+  { id: "b-004", title: "Jane Eyre", year: 1847, related: "Charlotte Brontë", subcategories: ["b-19c", "b-coming-of-age"] },
+  { id: "b-005", title: "Moby-Dick", year: 1851, related: "Herman Melville; the white whale", subcategories: ["b-19c"] },
+  { id: "b-006", title: "Madame Bovary", year: 1856, related: "Gustave Flaubert", subcategories: ["b-19c"] },
+  { id: "b-007", title: "Crime and Punishment", year: 1866, related: "Dostoevsky", subcategories: ["b-19c"] },
+  { id: "b-008", title: "Anna Karenina", year: 1877, related: "Tolstoy", subcategories: ["b-19c"] },
+  { id: "b-009", title: "The Picture of Dorian Gray", year: 1890, related: "Oscar Wilde", subcategories: ["b-19c"] },
+
+  // Modernist
+  { id: "b-010", title: "Ulysses", year: 1922, wikipediaTitle: "Ulysses (novel)", related: "James Joyce; Bloomsday in Dublin", subcategories: ["b-modernist"] },
+  { id: "b-011", title: "The Waste Land", year: 1922, related: "T. S. Eliot; modernist poem", subcategories: ["b-modernist"] },
+  { id: "b-012", title: "Mrs Dalloway", year: 1925, related: "Virginia Woolf", subcategories: ["b-modernist"] },
+  { id: "b-013", title: "The Great Gatsby", year: 1925, related: "F. Scott Fitzgerald; West Egg", subcategories: ["b-modernist"] },
+  { id: "b-014", title: "To the Lighthouse", year: 1927, related: "Virginia Woolf", subcategories: ["b-modernist"] },
+  { id: "b-015", title: "The Sound and the Fury", year: 1929, related: "William Faulkner", subcategories: ["b-modernist"] },
+
+  // Dystopian
+  { id: "b-016", title: "We", year: 1924, wikipediaTitle: "We (novel)", related: "Yevgeny Zamyatin; pre-Orwell dystopia", subcategories: ["b-dystopian"] },
+  { id: "b-017", title: "Brave New World", year: 1932, related: "Aldous Huxley", subcategories: ["b-dystopian"] },
+  { id: "b-018", title: "Animal Farm", year: 1945, related: "George Orwell; Soviet allegory", subcategories: ["b-dystopian"] },
+  { id: "b-019", title: "Nineteen Eighty-Four", year: 1949, related: "Orwell; Big Brother is watching", subcategories: ["b-dystopian"] },
+  { id: "b-020", title: "Fahrenheit 451", year: 1953, related: "Ray Bradbury; burning books", subcategories: ["b-dystopian"] },
+  { id: "b-021", title: "A Clockwork Orange", year: 1962, wikipediaTitle: "A Clockwork Orange (novel)", related: "Anthony Burgess", subcategories: ["b-dystopian"] },
+  { id: "b-022", title: "The Handmaid's Tale", year: 1985, related: "Margaret Atwood; Gilead", subcategories: ["b-dystopian"] },
+
+  // Coming-of-age
+  { id: "b-023", title: "The Catcher in the Rye", year: 1951, related: "J. D. Salinger; Holden Caulfield", subcategories: ["b-coming-of-age"] },
+  { id: "b-024", title: "Lord of the Flies", year: 1954, related: "William Golding", subcategories: ["b-coming-of-age"] },
+  { id: "b-025", title: "To Kill a Mockingbird", year: 1960, related: "Harper Lee; Scout and Atticus Finch", subcategories: ["b-coming-of-age", "b-prizes"] },
+  { id: "b-026", title: "The Bell Jar", year: 1963, related: "Sylvia Plath", subcategories: ["b-coming-of-age"] },
+  { id: "b-027", title: "The Outsiders", year: 1967, wikipediaTitle: "The Outsiders (novel)", related: "S. E. Hinton; Greasers vs. Socs", subcategories: ["b-coming-of-age"] },
+
+  // Fantasy & sci-fi
+  { id: "b-028", title: "The Hobbit", year: 1937, related: "J. R. R. Tolkien", subcategories: ["b-fantasy"] },
+  { id: "b-029", title: "Foundation", year: 1951, wikipediaTitle: "Foundation (Asimov novel)", related: "Isaac Asimov; psychohistory", subcategories: ["b-fantasy"] },
+  { id: "b-030", title: "The Lord of the Rings", year: 1954, related: "Tolkien; The Fellowship of the Ring publishes", subcategories: ["b-fantasy"] },
+  { id: "b-031", title: "Dune", year: 1965, wikipediaTitle: "Dune (novel)", related: "Frank Herbert; Arrakis", subcategories: ["b-fantasy"] },
+  { id: "b-032", title: "Neuromancer", year: 1984, related: "William Gibson; cyberpunk genesis", subcategories: ["b-fantasy"] },
+  { id: "b-033", title: "Harry Potter and the Philosopher's Stone", year: 1997, related: "J. K. Rowling", subcategories: ["b-fantasy", "b-coming-of-age"] },
+  { id: "b-034", title: "A Game of Thrones", year: 1996, related: "George R. R. Martin; A Song of Ice and Fire begins", subcategories: ["b-fantasy"] },
+
+  // Booker & Pulitzer
+  { id: "b-035", title: "Beloved", year: 1987, wikipediaTitle: "Beloved (novel)", related: "Toni Morrison; Pulitzer 1988", subcategories: ["b-prizes", "b-postcolonial"] },
+  { id: "b-036", title: "The Remains of the Day", year: 1989, related: "Kazuo Ishiguro; Booker Prize", subcategories: ["b-prizes"] },
+  { id: "b-037", title: "The God of Small Things", year: 1997, related: "Arundhati Roy; Booker Prize", subcategories: ["b-prizes", "b-postcolonial"] },
+  { id: "b-038", title: "The Road", year: 2006, wikipediaTitle: "The Road", related: "Cormac McCarthy; Pulitzer 2007", subcategories: ["b-prizes", "b-dystopian", "b-21c"] },
+  { id: "b-039", title: "Wolf Hall", year: 2009, related: "Hilary Mantel; Booker 2009; Thomas Cromwell", subcategories: ["b-prizes", "b-21c"] },
+  { id: "b-040", title: "The Sympathizer", year: 2015, related: "Viet Thanh Nguyen; Pulitzer 2016", subcategories: ["b-prizes", "b-postcolonial", "b-21c"] },
+  { id: "b-041", title: "The Underground Railroad", year: 2016, wikipediaTitle: "The Underground Railroad (novel)", related: "Colson Whitehead; Pulitzer 2017", subcategories: ["b-prizes", "b-postcolonial", "b-21c"] },
+
+  // Postcolonial & global
+  { id: "b-042", title: "Things Fall Apart", year: 1958, related: "Chinua Achebe; colonial Nigeria", subcategories: ["b-postcolonial"] },
+  { id: "b-043", title: "One Hundred Years of Solitude", year: 1967, related: "Gabriel García Márquez; magical realism", subcategories: ["b-postcolonial"] },
+  { id: "b-044", title: "Midnight's Children", year: 1981, related: "Salman Rushdie; Indian independence", subcategories: ["b-postcolonial", "b-prizes"] },
+
+  // 21st century
+  { id: "b-045", title: "Atonement", year: 2001, wikipediaTitle: "Atonement (novel)", related: "Ian McEwan", subcategories: ["b-21c"] },
+  { id: "b-046", title: "Cloud Atlas", year: 2004, wikipediaTitle: "Cloud Atlas (novel)", related: "David Mitchell; nested narratives", subcategories: ["b-21c"] },
+  { id: "b-047", title: "Pachinko", year: 2017, wikipediaTitle: "Pachinko (novel)", related: "Min Jin Lee; four generations of Korean Japanese", subcategories: ["b-21c", "b-postcolonial"] },
+  { id: "b-048", title: "Normal People", year: 2018, wikipediaTitle: "Normal People", related: "Sally Rooney", subcategories: ["b-21c", "b-coming-of-age"] },
+].map((e) => ({ ...e, category: "books" as const }));
+
+const inventions: TimelineEvent[] = [
+  // Communication & media
+  { id: "i-001", title: "Movable type printing press", year: 1440, wikipediaTitle: "Printing press", related: "Johannes Gutenberg in Mainz", subcategories: ["i-comm"] },
+  { id: "i-002", title: "Photography (daguerreotype)", year: 1839, wikipediaTitle: "Daguerreotype", related: "Louis Daguerre", subcategories: ["i-comm"] },
+  { id: "i-003", title: "Telephone", year: 1876, related: "Alexander Graham Bell", subcategories: ["i-comm"] },
+  { id: "i-004", title: "Phonograph", year: 1877, related: "Thomas Edison", subcategories: ["i-comm"] },
+  { id: "i-005", title: "Television first public demo", year: 1926, wikipediaTitle: "John Logie Baird", related: "John Logie Baird", subcategories: ["i-comm"] },
+  { id: "i-006", title: "World Wide Web proposed", year: 1989, wikipediaTitle: "World Wide Web", related: "Tim Berners-Lee at CERN", subcategories: ["i-comm", "i-computing"] },
+  { id: "i-007", title: "First iPhone released", year: 2007, wikipediaTitle: "IPhone (1st generation)", related: "Announced by Steve Jobs at Macworld", subcategories: ["i-comm", "i-computing"] },
+
+  // Medicine
+  { id: "i-008", title: "Smallpox vaccine", year: 1796, related: "Edward Jenner inoculates James Phipps", subcategories: ["i-medicine"] },
+  { id: "i-009", title: "Anaesthesia (ether)", year: 1846, wikipediaTitle: "Ether Day", related: "William Morton at Massachusetts General Hospital", subcategories: ["i-medicine"] },
+  { id: "i-010", title: "Germ theory of disease", year: 1861, wikipediaTitle: "Germ theory of disease", related: "Pasteur publishes his experiments", subcategories: ["i-medicine"] },
+  { id: "i-011", title: "X-rays discovered", year: 1895, wikipediaTitle: "X-ray", related: "Wilhelm Röntgen", subcategories: ["i-medicine", "i-physics"] },
+  { id: "i-012", title: "Penicillin discovered", year: 1928, wikipediaTitle: "Penicillin", related: "Alexander Fleming", subcategories: ["i-medicine"] },
+  { id: "i-013", title: "Polio vaccine", year: 1955, wikipediaTitle: "Polio vaccine", related: "Jonas Salk announces successful field trials", subcategories: ["i-medicine"] },
+  { id: "i-014", title: "mRNA COVID-19 vaccine", year: 2020, wikipediaTitle: "Pfizer–BioNTech COVID-19 vaccine", related: "Authorized in record time", subcategories: ["i-medicine"] },
+
+  // Transportation
+  { id: "i-015", title: "Watt steam engine", year: 1769, related: "James Watt's separate condenser", subcategories: ["i-transport", "i-physics"] },
+  { id: "i-016", title: "Stephenson's Rocket", year: 1829, related: "Locomotive wins Rainhill Trials", subcategories: ["i-transport"] },
+  { id: "i-017", title: "Benz Patent-Motorwagen", year: 1886, related: "Karl Benz patents the modern automobile", subcategories: ["i-transport"] },
+  { id: "i-018", title: "Wright brothers' first flight", year: 1903, wikipediaTitle: "Wright brothers", related: "At Kitty Hawk", subcategories: ["i-transport"] },
+  { id: "i-019", title: "Ford Model T", year: 1908, wikipediaTitle: "Ford Model T", related: "Assembly-line automobile for the masses", subcategories: ["i-transport"] },
+  { id: "i-020", title: "Apollo 11 Moon landing", year: 1969, wikipediaTitle: "Apollo 11", related: "Armstrong and Aldrin", subcategories: ["i-space", "i-transport"] },
+
+  // Physics & energy
+  { id: "i-021", title: "Theory of general relativity", year: 1915, wikipediaTitle: "General relativity", related: "Einstein presents the field equations", subcategories: ["i-physics"] },
+  { id: "i-022", title: "Chicago Pile-1 nuclear reactor", year: 1942, wikipediaTitle: "Chicago Pile-1", related: "Fermi at the University of Chicago", subcategories: ["i-physics"] },
+  { id: "i-023", title: "Trinity nuclear test", year: 1945, wikipediaTitle: "Trinity (nuclear test)", related: "First detonation of a nuclear weapon", subcategories: ["i-physics", "i-medicine"] },
+  { id: "i-024", title: "Higgs boson observed", year: 2012, wikipediaTitle: "Higgs boson", related: "Detected at the LHC at CERN", subcategories: ["i-physics"] },
+
+  // Computing
+  { id: "i-025", title: "ENIAC", year: 1945, related: "First general-purpose electronic computer", subcategories: ["i-computing"] },
+  { id: "i-026", title: "Transistor", year: 1947, related: "Invented at Bell Labs", subcategories: ["i-computing"] },
+  { id: "i-027", title: "Integrated circuit", year: 1958, related: "Independently by Kilby and Noyce", subcategories: ["i-computing"] },
+  { id: "i-028", title: "ARPANET first message", year: 1969, wikipediaTitle: "ARPANET", related: "UCLA to SRI; 'LO' transmitted", subcategories: ["i-computing", "i-comm"] },
+  { id: "i-029", title: "Apple II personal computer", year: 1977, wikipediaTitle: "Apple II", related: "Wozniak and Jobs", subcategories: ["i-computing"] },
+  { id: "i-030", title: "GPT-3 released", year: 2020, wikipediaTitle: "GPT-3", related: "OpenAI; large language model", subcategories: ["i-computing"] },
+
+  // Space
+  { id: "i-031", title: "Sputnik 1", year: 1957, related: "First artificial Earth satellite, USSR", subcategories: ["i-space"] },
+  { id: "i-032", title: "Yuri Gagarin orbits the Earth", year: 1961, wikipediaTitle: "Vostok 1", related: "Vostok 1; first human in space", subcategories: ["i-space"] },
+  { id: "i-033", title: "Hubble Space Telescope launched", year: 1990, wikipediaTitle: "Hubble Space Telescope", related: "On board the Space Shuttle Discovery", subcategories: ["i-space"] },
+  { id: "i-034", title: "Mars rover Curiosity lands", year: 2012, wikipediaTitle: "Curiosity (rover)", related: "NASA; Gale crater", subcategories: ["i-space"] },
+  { id: "i-035", title: "James Webb Space Telescope launched", year: 2021, wikipediaTitle: "James Webb Space Telescope", related: "Successor to Hubble", subcategories: ["i-space"] },
+
+  // Genetics
+  { id: "i-036", title: "DNA double helix described", year: 1953, wikipediaTitle: "DNA", related: "Watson and Crick publish in Nature", subcategories: ["i-genetics"] },
+  { id: "i-037", title: "First IVF baby", year: 1978, wikipediaTitle: "Louise Brown", related: "Louise Brown born in England", subcategories: ["i-genetics", "i-medicine"] },
+  { id: "i-038", title: "Dolly the sheep cloned", year: 1996, wikipediaTitle: "Dolly (sheep)", related: "First mammal cloned from an adult cell", subcategories: ["i-genetics"] },
+  { id: "i-039", title: "Human Genome Project completed", year: 2003, wikipediaTitle: "Human Genome Project", related: "International effort to sequence the human genome", subcategories: ["i-genetics"] },
+  { id: "i-040", title: "CRISPR-Cas9 gene editing", year: 2012, wikipediaTitle: "CRISPR", related: "Doudna and Charpentier", subcategories: ["i-genetics"] },
+].map((e) => ({ ...e, category: "inventions" as const }));
+
+const wars: TimelineEvent[] = [
+  // Ancient & medieval
+  { id: "w-001", title: "Fall of the Western Roman Empire", year: 476, related: "Romulus Augustulus deposed", subcategories: ["w-ancient"] },
+  { id: "w-002", title: "Battle of Hastings", year: 1066, related: "William the Conqueror defeats Harold II", subcategories: ["w-ancient"] },
+  { id: "w-003", title: "Magna Carta sealed", year: 1215, wikipediaTitle: "Magna Carta", related: "King John at Runnymede", subcategories: ["w-ancient", "w-treaties"] },
+  { id: "w-004", title: "Black Death peaks in Europe", year: 1348, wikipediaTitle: "Black Death", related: "Plague kills a third of Europe", subcategories: ["w-ancient"] },
+  { id: "w-005", title: "Fall of Constantinople", year: 1453, related: "Ottomans under Mehmed II", subcategories: ["w-ancient"] },
+  { id: "w-006", title: "Columbus reaches the Americas", year: 1492, wikipediaTitle: "Voyages of Christopher Columbus", related: "Sponsored by Castile and Aragon", subcategories: ["w-ancient"] },
+  { id: "w-007", title: "Spanish Armada defeated", year: 1588, wikipediaTitle: "Spanish Armada", related: "Defeated by the English", subcategories: ["w-ancient"] },
+
+  // Revolutions
+  { id: "w-008", title: "Glorious Revolution", year: 1688, related: "William III and Mary II take the English throne", subcategories: ["w-revolutions"] },
+  { id: "w-009", title: "American Declaration of Independence", year: 1776, wikipediaTitle: "United States Declaration of Independence", related: "Drafted primarily by Thomas Jefferson", subcategories: ["w-revolutions", "w-treaties"] },
+  { id: "w-010", title: "Storming of the Bastille", year: 1789, related: "Start of the French Revolution", subcategories: ["w-revolutions"] },
+  { id: "w-011", title: "Haitian Revolution begins", year: 1791, wikipediaTitle: "Haitian Revolution", related: "Slave uprising in Saint-Domingue", subcategories: ["w-revolutions"] },
+  { id: "w-012", title: "Russian Revolution", year: 1917, related: "Bolsheviks under Lenin take power", subcategories: ["w-revolutions"] },
+  { id: "w-013", title: "Chinese Communist Revolution", year: 1949, wikipediaTitle: "Chinese Communist Revolution", related: "Mao proclaims the PRC", subcategories: ["w-revolutions"] },
+
+  // World wars
+  { id: "w-014", title: "World War I begins", year: 1914, wikipediaTitle: "World War I", related: "Assassination of Franz Ferdinand", subcategories: ["w-world-wars"] },
+  { id: "w-015", title: "Battle of the Somme", year: 1916, wikipediaTitle: "Battle of the Somme", related: "One of the bloodiest battles in history", subcategories: ["w-world-wars"] },
+  { id: "w-016", title: "World War I ends (Armistice)", year: 1918, wikipediaTitle: "Armistice of 11 November 1918", related: "Eleventh hour of the eleventh day", subcategories: ["w-world-wars", "w-treaties"] },
+  { id: "w-017", title: "Treaty of Versailles", year: 1919, wikipediaTitle: "Treaty of Versailles", related: "Formal end to World War I", subcategories: ["w-treaties"] },
+  { id: "w-018", title: "World War II begins", year: 1939, wikipediaTitle: "World War II", related: "Germany invades Poland", subcategories: ["w-world-wars"] },
+  { id: "w-019", title: "D-Day landings", year: 1944, wikipediaTitle: "Normandy landings", related: "Allied invasion of Normandy", subcategories: ["w-world-wars"] },
+  { id: "w-020", title: "Atomic bombing of Hiroshima", year: 1945, wikipediaTitle: "Atomic bombings of Hiroshima and Nagasaki", related: "B-29 Enola Gay", subcategories: ["w-world-wars"] },
+  { id: "w-021", title: "World War II ends", year: 1945, wikipediaTitle: "End of World War II in Asia", related: "Japan surrenders aboard USS Missouri", subcategories: ["w-world-wars", "w-treaties"] },
+
+  // Cold War
+  { id: "w-022", title: "Berlin Airlift begins", year: 1948, wikipediaTitle: "Berlin Blockade", related: "Western powers supply West Berlin", subcategories: ["w-cold-war"] },
+  { id: "w-023", title: "Korean War begins", year: 1950, related: "North Korea crosses the 38th parallel", subcategories: ["w-cold-war"] },
+  { id: "w-024", title: "Cuban Missile Crisis", year: 1962, related: "US-Soviet standoff over missiles in Cuba", subcategories: ["w-cold-war"] },
+  { id: "w-025", title: "Tet Offensive", year: 1968, wikipediaTitle: "Tet Offensive", related: "North Vietnamese surprise attack", subcategories: ["w-cold-war"] },
+  { id: "w-026", title: "Fall of the Berlin Wall", year: 1989, wikipediaTitle: "Berlin Wall", related: "Symbolic end to the Cold War in Europe", subcategories: ["w-cold-war"] },
+  { id: "w-027", title: "Dissolution of the Soviet Union", year: 1991, related: "Gorbachev resigns; USSR ends", subcategories: ["w-cold-war"] },
+
+  // Modern (post-2000)
+  { id: "w-028", title: "September 11 attacks", year: 2001, related: "Attacks on the World Trade Center and Pentagon", subcategories: ["w-modern"] },
+  { id: "w-029", title: "Iraq War begins", year: 2003, wikipediaTitle: "Iraq War", related: "US-led invasion of Iraq", subcategories: ["w-modern"] },
+  { id: "w-030", title: "2008 financial crisis", year: 2008, wikipediaTitle: "2008 financial crisis", related: "Lehman Brothers collapses", subcategories: ["w-modern"] },
+  { id: "w-031", title: "Arab Spring begins", year: 2010, wikipediaTitle: "Arab Spring", related: "Started in Tunisia with the Tunisian Revolution", subcategories: ["w-modern", "w-revolutions"] },
+  { id: "w-032", title: "COVID-19 pandemic declared", year: 2020, wikipediaTitle: "COVID-19 pandemic", related: "WHO declares pandemic", subcategories: ["w-modern"] },
+  { id: "w-033", title: "Russian invasion of Ukraine", year: 2022, wikipediaTitle: "Russian invasion of Ukraine", related: "Largest war in Europe since 1945", subcategories: ["w-modern"] },
+
+  // Treaties & milestones
+  { id: "w-034", title: "Peace of Westphalia", year: 1648, related: "Ends the Thirty Years' War; modern state sovereignty", subcategories: ["w-treaties"] },
+  { id: "w-035", title: "Indian independence", year: 1947, wikipediaTitle: "Indian Independence Act 1947", related: "End of British colonial rule", subcategories: ["w-treaties"] },
+  { id: "w-036", title: "Universal Declaration of Human Rights", year: 1948, wikipediaTitle: "Universal Declaration of Human Rights", related: "Adopted by the UN General Assembly", subcategories: ["w-treaties"] },
+].map((e) => ({ ...e, category: "wars" as const }));
+
+const music: TimelineEvent[] = [
+  // Jazz era
+  { id: "m-001", title: "King Oliver's Creole Jazz Band recordings", year: 1923, wikipediaTitle: "King Oliver's Creole Jazz Band", related: "Louis Armstrong on second cornet", subcategories: ["m-jazz"] },
+  { id: "m-002", title: "West End Blues – Louis Armstrong", year: 1928, wikipediaTitle: "West End Blues", related: "Hot Five recording, iconic intro cadenza", subcategories: ["m-jazz"] },
+  { id: "m-003", title: "Body and Soul – Coleman Hawkins", year: 1939, wikipediaTitle: "Body and Soul (1930 song)", related: "Defining tenor sax improvisation", subcategories: ["m-jazz"] },
+  { id: "m-004", title: "Kind of Blue – Miles Davis", year: 1959, wikipediaTitle: "Kind of Blue", related: "Modal jazz landmark", subcategories: ["m-jazz"] },
+  { id: "m-005", title: "A Love Supreme – John Coltrane", year: 1965, wikipediaTitle: "A Love Supreme", related: "Coltrane's spiritual suite", subcategories: ["m-jazz"] },
+
+  // British invasion
+  { id: "m-006", title: "Please Please Me – The Beatles", year: 1963, wikipediaTitle: "Please Please Me", related: "The Beatles' UK debut album", subcategories: ["m-british"] },
+  { id: "m-007", title: "A Hard Day's Night – The Beatles", year: 1964, wikipediaTitle: "A Hard Day's Night (album)", related: "First Beatles album of all originals", subcategories: ["m-british"] },
+  { id: "m-008", title: "Aftermath – The Rolling Stones", year: 1966, wikipediaTitle: "Aftermath (Rolling Stones album)", related: "First all-Jagger/Richards album", subcategories: ["m-british"] },
+  { id: "m-009", title: "Sgt. Pepper's Lonely Hearts Club Band – The Beatles", year: 1967, wikipediaTitle: "Sgt. Pepper's Lonely Hearts Club Band", related: "Recorded at Abbey Road", subcategories: ["m-british"] },
+  { id: "m-010", title: "Are You Experienced – Jimi Hendrix Experience", year: 1967, wikipediaTitle: "Are You Experienced", related: "Recorded in London; debut album", subcategories: ["m-british", "m-rock"] },
+  { id: "m-011", title: "Led Zeppelin IV", year: 1971, wikipediaTitle: "Led Zeppelin IV", related: "Features 'Stairway to Heaven'", subcategories: ["m-british", "m-rock"] },
+
+  // Singer-songwriter
+  { id: "m-012", title: "Blue – Joni Mitchell", year: 1971, wikipediaTitle: "Blue (Joni Mitchell album)", related: "Defining confessional songwriting", subcategories: ["m-singer-songwriter"] },
+  { id: "m-013", title: "Tapestry – Carole King", year: 1971, wikipediaTitle: "Tapestry (Carole King album)", related: "One of the best-selling albums ever", subcategories: ["m-singer-songwriter"] },
+  { id: "m-014", title: "Blood on the Tracks – Bob Dylan", year: 1975, wikipediaTitle: "Blood on the Tracks", related: "Mid-70s comeback album", subcategories: ["m-singer-songwriter"] },
+  { id: "m-015", title: "Rumours – Fleetwood Mac", year: 1977, wikipediaTitle: "Rumours (album)", related: "Recorded amid breakups inside the band", subcategories: ["m-singer-songwriter", "m-rock"] },
+  { id: "m-016", title: "Songs in the Key of Life – Stevie Wonder", year: 1976, wikipediaTitle: "Songs in the Key of Life", related: "Stevie Wonder masterpiece", subcategories: ["m-singer-songwriter"] },
+
+  // Disco & funk
+  { id: "m-017", title: "What's Going On – Marvin Gaye", year: 1971, wikipediaTitle: "What's Going On (Marvin Gaye album)", related: "Concept album on social issues", subcategories: ["m-disco"] },
+  { id: "m-018", title: "Innervisions – Stevie Wonder", year: 1973, wikipediaTitle: "Innervisions", related: "Stevie Wonder's classic period", subcategories: ["m-disco"] },
+  { id: "m-019", title: "Saturday Night Fever soundtrack", year: 1977, wikipediaTitle: "Saturday Night Fever (soundtrack)", related: "Bee Gees-led disco explosion", subcategories: ["m-disco"] },
+  { id: "m-020", title: "Off the Wall – Michael Jackson", year: 1979, wikipediaTitle: "Off the Wall", related: "Quincy Jones-produced disco-pop", subcategories: ["m-disco"] },
+
+  // Classic rock & metal
+  { id: "m-021", title: "The Dark Side of the Moon – Pink Floyd", year: 1973, wikipediaTitle: "The Dark Side of the Moon", related: "Recorded at Abbey Road Studios", subcategories: ["m-rock"] },
+  { id: "m-022", title: "Born to Run – Bruce Springsteen", year: 1975, wikipediaTitle: "Born to Run", related: "Springsteen's breakthrough", subcategories: ["m-rock"] },
+  { id: "m-023", title: "The Wall – Pink Floyd", year: 1979, wikipediaTitle: "The Wall", related: "Rock opera concept album", subcategories: ["m-rock"] },
+  { id: "m-024", title: "Master of Puppets – Metallica", year: 1986, wikipediaTitle: "Master of Puppets", related: "Thrash metal landmark", subcategories: ["m-rock"] },
+  { id: "m-025", title: "Appetite for Destruction – Guns N' Roses", year: 1987, wikipediaTitle: "Appetite for Destruction", related: "Best-selling debut album in US history", subcategories: ["m-rock"] },
+  { id: "m-026", title: "Nevermind – Nirvana", year: 1991, wikipediaTitle: "Nevermind", related: "Featuring 'Smells Like Teen Spirit'", subcategories: ["m-rock"] },
+
+  // Synth & new wave
+  { id: "m-027", title: "Heroes – David Bowie", year: 1977, wikipediaTitle: "\"Heroes\" (David Bowie album)", related: "Berlin trilogy with Eno", subcategories: ["m-synth"] },
+  { id: "m-028", title: "Remain in Light – Talking Heads", year: 1980, wikipediaTitle: "Remain in Light", related: "Brian Eno production", subcategories: ["m-synth"] },
+  { id: "m-029", title: "Thriller – Michael Jackson", year: 1982, wikipediaTitle: "Thriller (album)", related: "Best-selling album of all time", subcategories: ["m-synth", "m-modern-pop"] },
+  { id: "m-030", title: "Purple Rain – Prince", year: 1984, wikipediaTitle: "Purple Rain (album)", related: "Soundtrack to the Prince film", subcategories: ["m-synth"] },
+  { id: "m-031", title: "The Joshua Tree – U2", year: 1987, wikipediaTitle: "The Joshua Tree", related: "U2's American-sounds breakthrough", subcategories: ["m-synth", "m-rock"] },
+
+  // Hip-hop
+  { id: "m-032", title: "Rapper's Delight – The Sugarhill Gang", year: 1979, wikipediaTitle: "Rapper's Delight", related: "First hip-hop hit on US pop charts", subcategories: ["m-hiphop"] },
+  { id: "m-033", title: "Run-DMC – Run-DMC", year: 1984, wikipediaTitle: "Run-D.M.C. (album)", related: "Stripped-down rap debut", subcategories: ["m-hiphop"] },
+  { id: "m-034", title: "It Takes a Nation of Millions to Hold Us Back – Public Enemy", year: 1988, wikipediaTitle: "It Takes a Nation of Millions to Hold Us Back", related: "Bomb Squad production", subcategories: ["m-hiphop"] },
+  { id: "m-035", title: "The Chronic – Dr. Dre", year: 1992, wikipediaTitle: "The Chronic", related: "Solo debut studio album by Dr. Dre", subcategories: ["m-hiphop"] },
+  { id: "m-036", title: "Illmatic – Nas", year: 1994, wikipediaTitle: "Illmatic", related: "Queensbridge debut", subcategories: ["m-hiphop"] },
+  { id: "m-037", title: "The Marshall Mathers LP – Eminem", year: 2000, wikipediaTitle: "The Marshall Mathers LP", related: "Produced largely by Dr. Dre", subcategories: ["m-hiphop"] },
+  { id: "m-038", title: "My Beautiful Dark Twisted Fantasy – Kanye West", year: 2010, wikipediaTitle: "My Beautiful Dark Twisted Fantasy", related: "Maximalist hip-hop epic", subcategories: ["m-hiphop"] },
+  { id: "m-039", title: "To Pimp a Butterfly – Kendrick Lamar", year: 2015, wikipediaTitle: "To Pimp a Butterfly", related: "Released on Top Dawg Entertainment", subcategories: ["m-hiphop"] },
+
+  // Modern pop
+  { id: "m-040", title: "Stankonia – OutKast", year: 2000, wikipediaTitle: "Stankonia", related: "Atlanta hip-hop crossover", subcategories: ["m-hiphop", "m-modern-pop"] },
+  { id: "m-041", title: "Back to Black – Amy Winehouse", year: 2006, wikipediaTitle: "Back to Black", related: "Mark Ronson and Salaam Remi", subcategories: ["m-modern-pop"] },
+  { id: "m-042", title: "21 – Adele", year: 2011, wikipediaTitle: "21 (Adele album)", related: "Best-selling album of the 2010s in the UK", subcategories: ["m-modern-pop"] },
+  { id: "m-043", title: "1989 – Taylor Swift", year: 2014, wikipediaTitle: "1989 (Taylor Swift album)", related: "Full pivot to synth-pop", subcategories: ["m-modern-pop"] },
+  { id: "m-044", title: "Lemonade – Beyoncé", year: 2016, wikipediaTitle: "Lemonade (Beyoncé album)", related: "Concept album + visual film", subcategories: ["m-modern-pop"] },
+  { id: "m-045", title: "Renaissance – Beyoncé", year: 2022, wikipediaTitle: "Renaissance (Beyoncé album)", related: "Seventh studio album by Beyoncé", subcategories: ["m-modern-pop"] },
+].map((e) => ({ ...e, category: "music" as const }));
+
+export const ALL_EVENTS: TimelineEvent[] = [
+  ...films,
+  ...books,
+  ...inventions,
+  ...wars,
+  ...music,
+];
+
+export const EVENTS_BY_SUBCATEGORY: Record<string, TimelineEvent[]> = (() => {
+  const map: Record<string, TimelineEvent[]> = {};
+  for (const sub of Object.keys(SUBCATEGORY_BY_ID)) map[sub] = [];
+  for (const ev of ALL_EVENTS) {
+    for (const sub of ev.subcategories) {
+      if (!map[sub]) map[sub] = [];
+      map[sub].push(ev);
+    }
+  }
+  return map;
+})();
+
+/** Union of events from all selected subcategories, deduplicated by event id. */
+export function getEventsForSubcategories(subIds: string[]): TimelineEvent[] {
+  const seen = new Set<string>();
+  const out: TimelineEvent[] = [];
+  for (const id of subIds) {
+    for (const ev of EVENTS_BY_SUBCATEGORY[id] ?? []) {
+      if (!seen.has(ev.id)) {
+        seen.add(ev.id);
+        out.push(ev);
+      }
+    }
+  }
+  return out;
+}
+
+/** All subcategory IDs (handy for selecting everything). */
+export const ALL_SUBCATEGORY_IDS: string[] = CATEGORIES.flatMap((c) =>
+  c.subcategories.map((s) => s.id),
+);

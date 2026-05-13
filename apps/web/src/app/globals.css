@@ -1,0 +1,14 @@
+html, body {
+  height: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--mui-palette-background-default, #f7f3e8);
+  transition: background-color .2s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
