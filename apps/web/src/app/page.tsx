@@ -14,21 +14,33 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
 import CategoryPicker from "@/components/CategoryPicker";
 import { CurrentCardPreview, NowDrawingPanel } from "@/components/CurrentCard";
 import GameOverDialog from "@/components/GameOverDialog";
 import HintModal from "@/components/HintModal";
 import HudBar from "@/components/HudBar";
 import ResultToast from "@/components/ResultToast";
+import ReversePanel from "@/components/ReversePanel";
 import Timeline from "@/components/Timeline";
+import TimelineRail from "@/components/TimelineRail";
 import { getEventsForSubcategories, SUBCATEGORY_BY_ID } from "@/game/data";
 import { gameReducer, initialState } from "@/game/state";
 import {
   clearPersistedState,
   loadPersistedState,
+  loadSeenEventIds,
+  recordSeenEventIds,
   savePersistedState,
 } from "@/game/persistence";
 import type { CategoryId, HintType, TimelineEvent } from "@/game/types";
@@ -45,16 +57,48 @@ const NEXT_CARD_DELAY_MS = 450;
 const TOAST_VISIBLE_MS = 2800;
 const PREFETCH_AHEAD = 8;
 
+/**
+ * Shuffle a pool with a bias toward unseen events. Each event gets a random
+ * sort key — unseen events draw from [0, 0.7), seen from [0.3, 1). The ranges
+ * overlap, so seen events still appear (great for spaced repetition) but
+ * unseen events are more likely to be drawn first.
+ */
+function weightedShuffle<T extends { id: string }>(
+  events: T[],
+  seenIds: Set<string>,
+): T[] {
+  return events
+    .map((e) => ({
+      e,
+      sort: seenIds.has(e.id)
+        ? Math.random() * 0.7 + 0.3 // seen: 0.30 – 1.00
+        : Math.random() * 0.7, //         unseen: 0.00 – 0.70
+    }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ e }) => e);
+}
+
 export default function HomePage() {
+  const theme = useTheme();
+  const isDesktop = useMediaQuery(theme.breakpoints.up("md"), { noSsr: true });
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [hydrated, setHydrated] = useState(false);
+  const [restoringCache, setRestoringCache] = useState(false);
 
   // On mount, restore from localStorage (after hydration so SSR/CSR match).
   useEffect(() => {
     const persisted = loadPersistedState();
     if (persisted) {
+      // There IS a cached game — show the spinner long enough to read.
+      setRestoringCache(true);
       dispatch({ type: "restore", state: persisted });
+      const t = setTimeout(() => {
+        setRestoringCache(false);
+        setHydrated(true);
+      }, 450);
+      return () => clearTimeout(t);
     }
+    // Fresh visitor — skip the spinner entirely.
     setHydrated(true);
   }, []);
 
@@ -64,11 +108,19 @@ export default function HomePage() {
     savePersistedState(state);
   }, [state, hydrated]);
   const [hintOpen, setHintOpen] = useState(false);
+  const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [shownResult, setShownResult] = useState<typeof state.lastResult>(null);
-  const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(null);
-  const [thumbnails, setThumbnails] = useState<Record<string, string | undefined>>({});
-  const [summaries, setSummaries] = useState<Record<string, WikipediaSummary | undefined>>({});
+  const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(
+    null,
+  );
+  const [thumbnails, setThumbnails] = useState<
+    Record<string, string | undefined>
+  >({});
+  const [summaries, setSummaries] = useState<
+    Record<string, WikipediaSummary | undefined>
+  >({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [insertIdx, setInsertIdx] = useState<number | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
@@ -109,6 +161,13 @@ export default function HomePage() {
     // and keep it visible long enough to read.
     setShownResult(state.lastResult);
     setToastOpen(true);
+    // Mark this event (and the reverse-mode distractors that were on screen
+    // alongside it) as "seen" so the player gets fresh material next run.
+    const seenIds: string[] = [state.lastResult.placedEvent.id];
+    if (state.reverseRound) {
+      for (const c of state.reverseRound.choices) seenIds.push(c.event.id);
+    }
+    recordSeenEventIds(seenIds);
     const closeT = setTimeout(() => setToastOpen(false), TOAST_VISIBLE_MS);
     const drawT =
       state.status === "playing"
@@ -118,7 +177,7 @@ export default function HomePage() {
       clearTimeout(closeT);
       if (drawT) clearTimeout(drawT);
     };
-  }, [state.lastResult, state.status]);
+  }, [state.lastResult, state.status, state.reverseRound]);
 
   useEffect(() => {
     setCurrentSummary(null);
@@ -155,13 +214,38 @@ export default function HomePage() {
     return () => controllers.forEach((c) => c.abort());
   }, [state.pool, fetchAndStoreThumbnail, thumbnails]);
 
+  // Reverse mode: fetch summaries for the three choices on the current round.
+  useEffect(() => {
+    if (!state.reverseRound) return;
+    const controllers: AbortController[] = [];
+    for (const choice of state.reverseRound.choices) {
+      if (thumbnails[choice.event.id] !== undefined) continue;
+      const controller = new AbortController();
+      controllers.push(controller);
+      fetchAndStoreThumbnail(choice.event, controller.signal).catch(() => {});
+    }
+    return () => controllers.forEach((c) => c.abort());
+  }, [state.reverseRound, fetchAndStoreThumbnail, thumbnails]);
+
   const handleStart = () => {
     setThumbnails({});
     setSummaries({});
 
-    // Start instantly on the bundled pool.
+    // Start instantly on the bundled pool, biased toward events the player
+    // hasn't seen in recent runs.
     const bundled = getEventsForSubcategories(state.selectedSubcategories);
-    dispatch({ type: "start-game", events: bundled });
+    const seenIds = loadSeenEventIds();
+    const ordered = weightedShuffle(bundled, seenIds);
+    // Mark the anchor (and first reverse-round trio) as seen up front so
+    // subsequent runs don't immediately reopen with the same starter.
+    if (ordered.length > 0) {
+      recordSeenEventIds(
+        state.mode === "reverse"
+          ? ordered.slice(0, 3).map((e) => e.id)
+          : [ordered[0].id],
+      );
+    }
+    dispatch({ type: "start-game", events: ordered });
 
     // Fire SPARQL queries in the background; append to the pool when they land.
     const cats = new Set<CategoryId>();
@@ -175,10 +259,14 @@ export default function HomePage() {
     fetchLiveEventsForCategories(Array.from(cats))
       .then((live) => {
         if (live.length > 0) {
-          dispatch({ type: "extend-pool", events: live });
+          const seenIds = loadSeenEventIds();
+          const biased = weightedShuffle(live, seenIds);
+          dispatch({ type: "extend-pool", events: biased });
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // Silent — bundled pool still drives the game.
+      })
       .finally(() => setPoolLoading(false));
   };
 
@@ -192,11 +280,24 @@ export default function HomePage() {
 
   const handleChooseHint = (hintType: HintType) => {
     let relatedSentence: string | undefined;
-    if (hintType === "related" && currentSummary?.extract && state.current) {
-      relatedSentence = redactYear(
-        firstSentence(currentSummary.extract),
-        state.current.year,
-      );
+    if (hintType === "related") {
+      // Resolve the target event + its summary across modes.
+      const targetEvent =
+        state.mode === "reverse"
+          ? state.reverseRound?.choices[state.reverseRound.correctIndex].event
+          : state.current;
+      const targetSummary =
+        state.mode === "reverse"
+          ? targetEvent
+            ? summaries[targetEvent.id]
+            : null
+          : currentSummary;
+      if (targetEvent && targetSummary?.extract) {
+        relatedSentence = redactYear(
+          firstSentence(targetSummary.extract),
+          targetEvent.year,
+        );
+      }
     }
     dispatch({ type: "use-hint", hintType, relatedSentence });
     setHintOpen(false);
@@ -212,12 +313,18 @@ export default function HomePage() {
       setInsertIdx(null);
       return;
     }
-    const data = over.data.current as { index?: number; kind?: string } | undefined;
+    const data = over.data.current as
+      | { index?: number; kind?: string }
+      | undefined;
     if (typeof data?.index !== "number") {
       setInsertIdx(null);
       return;
     }
-    if (data.kind === "end" || data.kind === "start") {
+    if (
+      data.kind === "end" ||
+      data.kind === "start" ||
+      data.kind === "slot"
+    ) {
       setInsertIdx(data.index);
       return;
     }
@@ -259,12 +366,16 @@ export default function HomePage() {
 
   return (
     <Container
-      maxWidth="md"
+      maxWidth="lg"
       sx={{
-        py: { xs: 2, sm: 4 },
+        py: { xs: 1, sm: 2 },
         px: { xs: 2, sm: 3, md: 4 },
-        // Leave room for the bottom-pinned NowDrawingPanel
-        pb: { xs: state.status === "playing" ? 18 : 4, sm: state.status === "playing" ? 20 : 4 },
+        // Leave room on mobile for the bottom-pinned NowDrawingPanel.
+        // On desktop the panel is a sidebar so no extra bottom padding.
+        pb: {
+          xs: state.status === "playing" ? 18 : 4,
+          md: 4,
+        },
         position: "relative",
         zIndex: 1,
       }}
@@ -279,40 +390,69 @@ export default function HomePage() {
         onDragCancel={onDragCancel}
       >
         <Stack spacing={3}>
-          <HudBar
-            score={state.score}
-            streak={state.streak}
-            strikes={state.strikes}
-            hintsRemaining={state.hintsRemaining}
-            onNewGame={
-              state.status === "playing" || state.status === "gameover"
-                ? () => {
-                    setThumbnails({});
-                    clearPersistedState();
-                    dispatch({ type: "restart" });
-                    handleStart();
-                  }
-                : undefined
-            }
-          />
+          {hydrated && (
+            <Box
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 8,
+                bgcolor: "background.default",
+                pb: 1,
+                borderBottom: 1,
+                borderColor: "divider",
+              }}
+            >
+              <HudBar
+                score={state.score}
+                streak={state.streak}
+                strikes={state.strikes}
+                hintsRemaining={state.hintsRemaining}
+                hintUsed={state.hintUsedOnCurrent}
+                onUseHint={
+                  state.status === "playing" &&
+                  (state.current || state.reverseRound)
+                    ? () => setHintOpen(true)
+                    : undefined
+                }
+                onNewGame={
+                  state.status === "playing"
+                    ? () => setConfirmNewGameOpen(true)
+                    : state.status === "gameover"
+                      ? () => {
+                          setThumbnails({});
+                          clearPersistedState();
+                          dispatch({ type: "restart" });
+                          handleStart();
+                        }
+                      : undefined
+                }
+                onOpenMenu={
+                  state.status !== "picking" && !menuOpen
+                    ? () => setMenuOpen(true)
+                    : undefined
+                }
+              />
+            </Box>
+          )}
 
-          {!hydrated && (
+          {restoringCache && (
             <Box
               sx={{
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 1.5,
-                py: 6,
+                gap: 2,
+                py: 10,
                 color: "text.secondary",
               }}
             >
               <Box
                 sx={{
-                  width: 12,
-                  height: 12,
+                  width: 20,
+                  height: 20,
                   borderRadius: "50%",
-                  border: 1.5,
+                  border: 2,
                   borderColor: "divider",
                   borderTopColor: "primary.main",
                   animation: "spin 0.9s linear infinite",
@@ -321,24 +461,41 @@ export default function HomePage() {
                   },
                 }}
               />
-              <Typography
-                variant="caption"
-                sx={{
-                  fontFamily: 'var(--font-jetbrains), monospace',
-                  letterSpacing: "0.22em",
-                  textTransform: "uppercase",
-                  fontSize: 10,
-                }}
-              >
-                Restoring your run…
-              </Typography>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-display), serif",
+                    fontVariationSettings: '"opsz" 36',
+                    fontSize: 18,
+                    fontWeight: 400,
+                    color: "text.primary",
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Restoring your last run
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mt: 0.5,
+                    fontFamily: "var(--font-mono), monospace",
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontSize: 10,
+                  }}
+                >
+                  loading from cache
+                </Typography>
+              </Box>
             </Box>
           )}
 
-          {hydrated && state.status === "picking" && (
+          {hydrated && (state.status === "picking" || menuOpen) && (
             <CategoryPicker
               selected={state.selectedSubcategories}
               difficulty={state.difficulty}
+              mode={state.mode}
               loading={poolLoading}
               onToggleSub={(subId) =>
                 dispatch({ type: "toggle-subcategory", subcategory: subId })
@@ -349,71 +506,221 @@ export default function HomePage() {
               onChangeDifficulty={(d) =>
                 dispatch({ type: "set-difficulty", difficulty: d })
               }
-              onStart={handleStart}
+              onChangeMode={(m) => dispatch({ type: "set-mode", mode: m })}
+              onStart={() => {
+                setMenuOpen(false);
+                setThumbnails({});
+                clearPersistedState();
+                handleStart();
+              }}
+              onResume={
+                menuOpen && state.status !== "picking"
+                  ? () => setMenuOpen(false)
+                  : undefined
+              }
             />
           )}
 
-          {hydrated && state.status !== "picking" && (
-            <Stack spacing={2}>
+          {hydrated &&
+            !menuOpen &&
+            state.status !== "picking" &&
+            state.mode === "reverse" &&
+            state.reverseRound && (
+              <ReversePanel
+                round={state.reverseRound}
+                thumbnails={thumbnails}
+                summaries={summaries}
+                hintReveal={state.hintReveal}
+                highlightCorrect={state.hintReveal?.type === "answer"}
+                onPick={(i) => {
+                  if (state.lastResult) return;
+                  dispatch({ type: "pick-reverse", choiceIndex: i });
+                }}
+              />
+            )}
+
+          {hydrated &&
+            !menuOpen &&
+            state.status !== "picking" &&
+            state.mode === "timeline" &&
+            (isDesktop ? (
+              /* Desktop — horizontal procession rail */
+              <Stack spacing={2.5} sx={{ alignItems: "stretch" }}>
+                {state.status === "playing" && state.current && (
+                  <Box
+                    sx={{
+                      maxWidth: 420,
+                      width: "100%",
+                      mx: "auto",
+                    }}
+                  >
+                    <NowDrawingPanel
+                      event={state.current}
+                      thumbnailUrl={
+                        currentSummary?.thumbnail?.url ??
+                        thumbnails[state.current.id]
+                      }
+                      originalUrl={currentSummary?.original?.url}
+                      hintReveal={state.hintReveal}
+                      hintsRemaining={state.hintsRemaining}
+                      hintUsed={state.hintUsedOnCurrent}
+                      onOpenHint={() => setHintOpen(true)}
+                    />
+                    <Typography
+                      sx={{
+                        mt: 1,
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 10,
+                        letterSpacing: "0.28em",
+                        textTransform: "uppercase",
+                        color: "text.secondary",
+                      }}
+                    >
+                      ↓ drop on the rail to place
+                    </Typography>
+                  </Box>
+                )}
+
+                <Stack spacing={1}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontFamily: "var(--font-mono), monospace",
+                        letterSpacing: "0.28em",
+                        textTransform: "uppercase",
+                        fontSize: 10,
+                      }}
+                    >
+                      Timeline · procession
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontFamily: "var(--font-mono), monospace",
+                        letterSpacing: "0.16em",
+                        fontSize: 10,
+                      }}
+                    >
+                      {state.timeline.length} placed ·{" "}
+                      {state.pool.length} in deck
+                    </Typography>
+                  </Box>
+
+                  <TimelineRail
+                    timeline={state.timeline}
+                    thumbnails={thumbnails}
+                    summaries={summaries}
+                    insertIdx={insertIdx}
+                    dragging={activeId !== null}
+                  />
+                </Stack>
+              </Stack>
+            ) : (
+              /* Mobile — existing vertical timeline with bottom-pinned panel */
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  flexWrap: "wrap",
-                  gap: 1,
+                  flexDirection: "column",
+                  gap: 0,
                 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "text.secondary",
-                    fontFamily: 'var(--font-jetbrains), monospace',
-                    letterSpacing: "0.28em",
-                    textTransform: "uppercase",
-                    fontSize: 10,
-                  }}
-                >
-                  Timeline
-                </Typography>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "text.secondary",
-                    fontFamily: 'var(--font-jetbrains), monospace',
-                    letterSpacing: "0.16em",
-                    fontSize: 10,
-                  }}
-                >
-                  {state.timeline.length} placed · {state.pool.length} in deck
-                </Typography>
-              </Box>
+                {state.status === "playing" && state.current && (
+                  <Box
+                    sx={{
+                      position: "fixed",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      zIndex: 10,
+                      width: "100%",
+                      px: { xs: 2, sm: 3 },
+                      pt: 3,
+                      pb: 2,
+                      background:
+                        "linear-gradient(to top, var(--mui-palette-background-default) 70%, transparent)",
+                    }}
+                  >
+                    <NowDrawingPanel
+                      event={state.current}
+                      thumbnailUrl={
+                        currentSummary?.thumbnail?.url ??
+                        thumbnails[state.current.id]
+                      }
+                      originalUrl={currentSummary?.original?.url}
+                      hintReveal={state.hintReveal}
+                      hintsRemaining={state.hintsRemaining}
+                      hintUsed={state.hintUsedOnCurrent}
+                      onOpenHint={() => setHintOpen(true)}
+                    />
+                  </Box>
+                )}
 
-              <Timeline
-                timeline={state.timeline}
-                thumbnails={thumbnails}
-                summaries={summaries}
-                insertIdx={insertIdx}
-                dragging={activeId !== null}
-              />
-            </Stack>
-          )}
+                <Stack spacing={2} sx={{ flex: 1, minWidth: 0 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      flexWrap: "wrap",
+                      gap: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontFamily: "var(--font-mono), monospace",
+                        letterSpacing: "0.28em",
+                        textTransform: "uppercase",
+                        fontSize: 10,
+                      }}
+                    >
+                      Timeline
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: "text.secondary",
+                        fontFamily: "var(--font-mono), monospace",
+                        letterSpacing: "0.16em",
+                        fontSize: 10,
+                      }}
+                    >
+                      {state.timeline.length} placed ·{" "}
+                      {state.pool.length} in deck
+                    </Typography>
+                  </Box>
+
+                  <Timeline
+                    timeline={state.timeline}
+                    thumbnails={thumbnails}
+                    summaries={summaries}
+                    insertIdx={insertIdx}
+                    dragging={activeId !== null}
+                  />
+                </Stack>
+              </Box>
+            ))}
         </Stack>
 
-        {state.status === "playing" && state.current && (
-          <NowDrawingPanel
-            event={state.current}
-            thumbnailUrl={
-              currentSummary?.thumbnail?.url ?? thumbnails[state.current.id]
-            }
-            hintReveal={state.hintReveal}
-            hintUsed={state.hintUsedOnCurrent}
-            hintsRemaining={state.hintsRemaining}
-            onOpenHint={() => setHintOpen(true)}
-          />
-        )}
-
-        <DragOverlay dropAnimation={{ duration: 220, easing: "cubic-bezier(.2, .8, .2, 1)" }}>
+        <DragOverlay
+          dropAnimation={{
+            duration: 220,
+            easing: "cubic-bezier(.2, .8, .2, 1)",
+          }}
+        >
           {draggedPreview}
         </DragOverlay>
       </DndContext>
@@ -432,7 +739,7 @@ export default function HomePage() {
       />
 
       <GameOverDialog
-        open={state.status === "gameover"}
+        open={state.status === "gameover" && !menuOpen}
         score={state.score}
         correctPlacements={state.correctPlacements}
         placements={state.placements}
@@ -450,6 +757,37 @@ export default function HomePage() {
           dispatch({ type: "restart" });
         }}
       />
+
+      <Dialog
+        open={confirmNewGameOpen}
+        onClose={() => setConfirmNewGameOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Start a new game?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Your current game progress will be lost.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmNewGameOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setConfirmNewGameOpen(false);
+              setThumbnails({});
+              setSummaries({});
+              clearPersistedState();
+              dispatch({ type: "restart" });
+              // Don't auto-start — return to the picker so the player can
+              // re-choose mode / difficulty / categories.
+            }}
+          >
+            Back to menu
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

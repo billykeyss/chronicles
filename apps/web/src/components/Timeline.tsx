@@ -89,7 +89,7 @@ export default function Timeline({
               <Typography
                 variant="caption"
                 sx={{
-                  fontFamily: 'var(--font-jetbrains), monospace',
+                  fontFamily: "var(--font-mono), monospace",
                   color: "primary.main",
                   fontSize: 10,
                   letterSpacing: "0.22em",
@@ -124,7 +124,8 @@ export default function Timeline({
             transform: insertAtEnd
               ? `translateY(${SHIFT_DISTANCE - ENTRY_HEIGHT}px)`
               : "translateY(0)",
-            transition: "height .28s cubic-bezier(.2, .8, .2, 1), opacity .15s, transform .28s",
+            transition:
+              "height .28s cubic-bezier(.2, .8, .2, 1), opacity .15s, transform .28s",
             opacity: dragging || insertAtEnd ? 1 : 0.001,
           }}
         >
@@ -153,7 +154,7 @@ export default function Timeline({
               <Typography
                 variant="caption"
                 sx={{
-                  fontFamily: 'var(--font-jetbrains), monospace',
+                  fontFamily: "var(--font-mono), monospace",
                   color: "primary.main",
                   fontSize: 10,
                   letterSpacing: "0.22em",

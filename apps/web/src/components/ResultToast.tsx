@@ -41,7 +41,9 @@ export default function ResultToast({ open, result, onClose }: Props) {
             {result.placedEvent.title} · {formatYear(result.placedEvent.year)}
           </Typography>
           {result.correct && result.pointsEarned > 0 && (
-            <Typography sx={{ fontWeight: 700 }}>+{result.pointsEarned}</Typography>
+            <Typography sx={{ fontWeight: 700 }}>
+              +{result.pointsEarned}
+            </Typography>
           )}
         </Stack>
       </Alert>

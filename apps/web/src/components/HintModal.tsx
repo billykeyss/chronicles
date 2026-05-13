@@ -40,16 +40,19 @@ const OPTIONS: Array<{
   },
 ];
 
-export default function HintModal({ open, onClose, onChoose, hintsRemaining }: Props) {
+export default function HintModal({
+  open,
+  onClose,
+  onChoose,
+  hintsRemaining,
+}: Props) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Use a hint</DialogTitle>
+      <DialogTitle>Consult the oracle</DialogTitle>
       <DialogContent>
-        <Typography
-          color="text.secondary"
-          sx={{ fontSize: 14, mb: 2 }}
-        >
-          {hintsRemaining} hint{hintsRemaining === 1 ? "" : "s"} left. Stronger hints earn fewer points.
+        <Typography color="text.secondary" sx={{ fontSize: 14, mb: 2 }}>
+          The oracle will speak {hintsRemaining} more time
+          {hintsRemaining === 1 ? "" : "s"}. Clearer visions cost more points.
         </Typography>
         <Stack spacing={1}>
           {OPTIONS.map((opt) => (
@@ -92,7 +95,7 @@ export default function HintModal({ open, onClose, onChoose, hintsRemaining }: P
                 <Typography
                   variant="caption"
                   sx={{
-                    fontFamily: 'var(--font-jetbrains), monospace',
+                    fontFamily: "var(--font-mono), monospace",
                     color: "primary.main",
                     fontSize: 11,
                     letterSpacing: "0.08em",

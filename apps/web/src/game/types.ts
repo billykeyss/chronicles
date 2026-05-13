@@ -55,20 +55,44 @@ export type GameStatus = "picking" | "playing" | "gameover";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
+export type GameMode = "timeline" | "reverse";
+
 export const DIFFICULTY_GAP: Record<Difficulty, number> = {
   easy: 100,
   medium: 50,
   hard: 10,
 };
 
+export type ReverseChoice = {
+  event: TimelineEvent;
+  /** True when a hint has marked this distractor as eliminated. */
+  eliminated: boolean;
+};
+
+export type ReverseRound = {
+  /** The year that the player is matching. */
+  year: number;
+  /** All three choices in display order (shuffled). */
+  choices: ReverseChoice[];
+  /** Index in `choices` of the correct answer. */
+  correctIndex: number;
+  /** Index of the player's pick, or null while undecided. */
+  pickedIndex: number | null;
+};
+
 export type GameState = {
   status: GameStatus;
+  mode: GameMode;
+  /** Endless mode: no strike-based game-over, hints regenerate, deck auto-refills. */
+  endless: boolean;
   difficulty: Difficulty;
   /** Selected subcategory IDs (the granular filter). */
   selectedSubcategories: string[];
   pool: TimelineEvent[];
   timeline: PlacedEvent[];
   current: TimelineEvent | null;
+  /** Reverse-mode current round. Null in timeline mode. */
+  reverseRound: ReverseRound | null;
   strikes: number;
   hintsRemaining: number;
   hintUsedOnCurrent: HintType | null;
@@ -89,3 +113,9 @@ export type GameState = {
 
 export const STRIKES_MAX = 3;
 export const HINTS_PER_GAME = 3;
+/** Endless mode: gain one hint after this many correct placements. */
+export const ENDLESS_HINT_EVERY_N = 5;
+/** Endless mode: cap on stockpiled hints. */
+export const ENDLESS_HINT_CAP = 5;
+/** Endless mode: refill the deck via SPARQL when it drops below this. */
+export const ENDLESS_POOL_REFILL_BELOW = 10;

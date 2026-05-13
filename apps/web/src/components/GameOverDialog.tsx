@@ -44,16 +44,14 @@ export default function GameOverDialog({
 
   return (
     <Dialog open={open} fullWidth maxWidth="xs">
-      <DialogTitle>
-        {ranOutOfEvents ? "Pool cleared" : "Game over"}
-      </DialogTitle>
+      <DialogTitle>{ranOutOfEvents ? "Pool cleared" : "Game over"}</DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
           <Box>
             <Typography
               variant="caption"
               sx={{
-                fontFamily: 'var(--font-jetbrains), monospace',
+                fontFamily: "var(--font-mono), monospace",
                 letterSpacing: "0.22em",
                 color: "text.secondary",
                 textTransform: "uppercase",
@@ -81,7 +79,7 @@ export default function GameOverDialog({
             <Typography
               variant="caption"
               sx={{
-                fontFamily: 'var(--font-jetbrains), monospace',
+                fontFamily: "var(--font-mono), monospace",
                 letterSpacing: "0.22em",
                 color: "text.secondary",
                 textTransform: "uppercase",
@@ -105,7 +103,10 @@ export default function GameOverDialog({
             </Typography>
           </Box>
           <Stack direction="row" spacing={3}>
-            <Stat label="Correct" value={`${correctPlacements} / ${placements}`} />
+            <Stat
+              label="Correct"
+              value={`${correctPlacements} / ${placements}`}
+            />
             <Stat label="Accuracy" value={`${accuracy}%`} />
             <Stat label="Best streak" value={`×${bestStreak}`} />
           </Stack>
@@ -127,7 +128,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       <Typography
         variant="caption"
         sx={{
-          fontFamily: 'var(--font-jetbrains), monospace',
+          fontFamily: "var(--font-mono), monospace",
           letterSpacing: "0.22em",
           color: "text.secondary",
           textTransform: "uppercase",

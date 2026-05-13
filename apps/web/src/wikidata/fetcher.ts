@@ -31,7 +31,9 @@ export async function fetchLiveEventsForCategories(
   signal?: AbortSignal,
 ): Promise<TimelineEvent[]> {
   const results = await Promise.all(
-    categories.map((c) => fetchLiveEventsForCategory(c, signal).catch(() => null)),
+    categories.map((c) =>
+      fetchLiveEventsForCategory(c, signal).catch(() => null),
+    ),
   );
   const flat: TimelineEvent[] = [];
   for (const r of results) {

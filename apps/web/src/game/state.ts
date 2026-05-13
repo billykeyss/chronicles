@@ -12,10 +12,12 @@ import {
   STRIKES_MAX,
   type CategoryId,
   type Difficulty,
+  type GameMode,
   type GameState,
   type HintReveal,
   type HintType,
   type PlacedEvent,
+  type ReverseRound,
   type TimelineEvent,
 } from "./types";
 
@@ -24,21 +26,26 @@ export type GameAction =
   | { type: "set-subcategories"; subcategories: string[] }
   | { type: "toggle-category-all"; category: CategoryId }
   | { type: "set-difficulty"; difficulty: Difficulty }
+  | { type: "set-mode"; mode: GameMode }
   | { type: "start-game"; events?: TimelineEvent[] }
   | { type: "extend-pool"; events: TimelineEvent[] }
   | { type: "restore"; state: GameState }
   | { type: "place"; slotIndex: number }
   | { type: "next-card" }
+  | { type: "pick-reverse"; choiceIndex: number }
   | { type: "use-hint"; hintType: HintType; relatedSentence?: string }
   | { type: "restart" };
 
 export const initialState: GameState = {
   status: "picking",
+  mode: "timeline",
+  endless: false,
   difficulty: "medium",
   selectedSubcategories: ALL_SUBCATEGORY_IDS,
   pool: [],
   timeline: [],
   current: null,
+  reverseRound: null,
   strikes: 0,
   hintsRemaining: HINTS_PER_GAME,
   hintUsedOnCurrent: null,
@@ -89,6 +96,79 @@ function formatYear(y: number): string {
   return `${Math.abs(y)} BC`;
 }
 
+/**
+ * Aggressive dedupe key that strips disambiguation suffixes ("(film)",
+ * "(1942 film)", etc.) and normalizes whitespace, so bundled and live
+ * versions of the same event collapse together.
+ */
+function dedupKey(title: string, year: number): string {
+  const normalized = title
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/g, "") // trailing parenthetical
+    .replace(/\s*–\s*.*$/g, "") // strip "– Artist" / "– Author" suffixes
+    .replace(/[^\w\s]/g, "") // remove punctuation
+    .replace(/\s+/g, " ")
+    .trim();
+  return `${normalized}|${year}`;
+}
+
+/**
+ * Build a reverse-mode round: pick a random correct event from the pool, then
+ * choose 2 distractors whose years are at least `minGap` away from the
+ * correct year (and from each other).
+ *
+ * Returns the round + the remaining pool (correct + 2 distractors removed).
+ */
+function buildReverseRound(
+  pool: TimelineEvent[],
+  minGap: number,
+): { round: ReverseRound | null; remaining: TimelineEvent[] } {
+  if (pool.length < 3) return { round: null, remaining: pool };
+  // Trust the caller's pool ordering (so unseen-priority weighting holds).
+  // Take the first event as the correct answer; distractors come from the rest.
+  const correct = pool[0];
+
+  const distractors: TimelineEvent[] = [];
+  const usedYears = new Set<number>([correct.year]);
+  for (const ev of pool.slice(1)) {
+    if (distractors.length === 2) break;
+    if (ev.id === correct.id) continue;
+    if (usedYears.has(ev.year)) continue;
+    const tooClose = Array.from(usedYears).some(
+      (y) => Math.abs(ev.year - y) < minGap,
+    );
+    if (tooClose) continue;
+    distractors.push(ev);
+    usedYears.add(ev.year);
+  }
+  // Fallback: if difficulty made it impossible, accept smaller-gap distractors
+  if (distractors.length < 2) {
+    for (const ev of pool.slice(1)) {
+      if (distractors.length === 2) break;
+      if (ev.id === correct.id) continue;
+      if (distractors.some((d) => d.id === ev.id)) continue;
+      if (ev.year === correct.year) continue;
+      distractors.push(ev);
+    }
+  }
+  if (distractors.length < 2) return { round: null, remaining: pool };
+
+  // Shuffle the 3 cards so the correct one isn't always first
+  const allChoices = shuffle([correct, ...distractors]);
+  const correctIndex = allChoices.findIndex((e) => e.id === correct.id);
+  const round: ReverseRound = {
+    year: correct.year,
+    choices: allChoices.map((event) => ({ event, eliminated: false })),
+    correctIndex,
+    pickedIndex: null,
+  };
+
+  // Remove all three used events from the pool
+  const usedIds = new Set([correct.id, ...distractors.map((d) => d.id)]);
+  const remaining = pool.filter((e) => !usedIds.has(e.id));
+  return { round, remaining };
+}
+
 function buildHintReveal(
   hintType: HintType,
   event: TimelineEvent,
@@ -98,9 +178,7 @@ function buildHintReveal(
   if (hintType === "decade") {
     const decadeStart = Math.floor(event.year / 10) * 10;
     const decadeLabel =
-      decadeStart >= 0
-        ? `${decadeStart}s`
-        : `${Math.abs(decadeStart)}s BC`;
+      decadeStart >= 0 ? `${decadeStart}s` : `${Math.abs(decadeStart)}s BC`;
     return {
       type: hintType,
       content: `This is from the ${decadeLabel}.`,
@@ -158,14 +236,37 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return { ...state, difficulty: action.difficulty };
     }
 
+    case "set-mode": {
+      return { ...state, mode: action.mode };
+    }
+
     case "start-game": {
       const events =
         action.events && action.events.length > 0
           ? action.events
           : getEventsForSubcategories(state.selectedSubcategories);
-      const shuffled = shuffle(events);
-      if (shuffled.length < 2) return state;
       const minGap = DIFFICULTY_GAP[state.difficulty];
+
+      if (state.mode === "reverse") {
+        if (events.length < 3) return state;
+        const { round, remaining } = buildReverseRound(events, minGap);
+        if (!round) return state;
+        return {
+          ...initialState,
+          status: "playing",
+          mode: "reverse",
+          difficulty: state.difficulty,
+          selectedSubcategories: state.selectedSubcategories,
+          pool: remaining,
+          reverseRound: round,
+        };
+      }
+
+      // Timeline mode (default). If the caller has pre-ordered events
+      // (e.g., for unseen-priority weighting), respect their order.
+      const shuffled =
+        action.events && action.events.length > 0 ? events : shuffle(events);
+      if (shuffled.length < 2) return state;
       const [anchor, ...rest] = shuffled;
       const anchorPlaced: PlacedEvent = {
         ...anchor,
@@ -173,12 +274,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         hintUsed: null,
       };
       const drawNext = drawCard(rest, [anchor.year], minGap);
-      // If no gap-compatible second card exists, fall back to first card (avoid soft-lock).
       const nextCard = drawNext.drawn ?? rest[0] ?? null;
       const remaining = drawNext.drawn ? drawNext.rest : rest.slice(1);
       return {
         ...initialState,
         status: "playing",
+        mode: "timeline",
         difficulty: state.difficulty,
         selectedSubcategories: state.selectedSubcategories,
         timeline: [anchorPlaced],
@@ -190,12 +291,57 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "use-hint": {
       if (
         state.status !== "playing" ||
-        !state.current ||
         state.hintsRemaining <= 0 ||
         state.hintUsedOnCurrent !== null
       ) {
         return state;
       }
+
+      if (state.mode === "reverse") {
+        if (!state.reverseRound) return state;
+        const round = state.reverseRound;
+        const correctEvent = round.choices[round.correctIndex].event;
+
+        // In reverse mode, the "decade" hint is repurposed as "eliminate a wrong choice".
+        if (action.hintType === "decade") {
+          const candidates = round.choices
+            .map((c, i) => ({ c, i }))
+            .filter(({ c, i }) => i !== round.correctIndex && !c.eliminated);
+          if (candidates.length === 0) return state;
+          const toElim =
+            candidates[Math.floor(Math.random() * candidates.length)];
+          const newChoices = round.choices.map((c, i) =>
+            i === toElim.i ? { ...c, eliminated: true } : c,
+          );
+          return {
+            ...state,
+            hintsRemaining: state.hintsRemaining - 1,
+            hintUsedOnCurrent: action.hintType,
+            reverseRound: { ...round, choices: newChoices },
+            hintReveal: {
+              type: action.hintType,
+              content: `Eliminated "${toElim.c.event.title}".`,
+              correctSlotIndices: [round.correctIndex],
+            },
+          };
+        }
+
+        const reveal = buildHintReveal(
+          action.hintType,
+          correctEvent,
+          [round.correctIndex],
+          action.relatedSentence,
+        );
+        return {
+          ...state,
+          hintsRemaining: state.hintsRemaining - 1,
+          hintUsedOnCurrent: action.hintType,
+          hintReveal: reveal,
+        };
+      }
+
+      // Timeline mode
+      if (!state.current) return state;
       const correctSlotIndices = getCorrectSlotIndices(
         state.timeline,
         state.current.year,
@@ -267,11 +413,37 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "next-card": {
       if (state.status !== "playing") return state;
-      const placedYears = state.timeline.map((e) => e.year);
       const minGap = DIFFICULTY_GAP[state.difficulty];
+
+      if (state.mode === "reverse") {
+        const { round, remaining } = buildReverseRound(state.pool, minGap);
+        if (!round) {
+          return {
+            ...state,
+            status: "gameover",
+            reverseRound: null,
+            lastResult: null,
+          };
+        }
+        return {
+          ...state,
+          reverseRound: round,
+          pool: remaining,
+          hintUsedOnCurrent: null,
+          hintReveal: null,
+          lastResult: null,
+        };
+      }
+
+      const placedYears = state.timeline.map((e) => e.year);
       const { drawn, rest } = drawCard(state.pool, placedYears, minGap);
       if (!drawn) {
-        return { ...state, status: "gameover", current: null, lastResult: null };
+        return {
+          ...state,
+          status: "gameover",
+          current: null,
+          lastResult: null,
+        };
       }
       return {
         ...state,
@@ -283,34 +455,89 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    case "pick-reverse": {
+      if (state.status !== "playing" || !state.reverseRound) return state;
+      if (state.reverseRound.pickedIndex !== null) return state;
+      const round = state.reverseRound;
+      const correct = action.choiceIndex === round.correctIndex;
+      const correctEvent = round.choices[round.correctIndex].event;
+      const placed: PlacedEvent = {
+        ...correctEvent,
+        correct,
+        hintUsed: state.hintUsedOnCurrent,
+      };
+      const { pointsEarned, newStreak } = scoreRound({
+        correct,
+        hintUsed: state.hintUsedOnCurrent,
+        streakBefore: state.streak,
+      });
+      const strikes = correct ? state.strikes : state.strikes + 1;
+      const status = strikes >= STRIKES_MAX ? "gameover" : "playing";
+
+      return {
+        ...state,
+        score: state.score + pointsEarned,
+        streak: newStreak,
+        bestStreak: Math.max(state.bestStreak, newStreak),
+        strikes,
+        status,
+        placements: state.placements + 1,
+        correctPlacements: state.correctPlacements + (correct ? 1 : 0),
+        reverseRound: { ...round, pickedIndex: action.choiceIndex },
+        hintReveal: null,
+        lastResult: {
+          correct,
+          pointsEarned,
+          placedEvent: placed,
+          correctSlotIndices: [round.correctIndex],
+          chosenSlotIndex: action.choiceIndex,
+        },
+      };
+    }
+
     case "extend-pool": {
       if (action.events.length === 0) return state;
-      // Avoid dupes by id and by lowercased title|year.
+      // Dedupe by id, by normalized title+year, and by Wikipedia article slug.
       const existingIds = new Set<string>([
         ...state.timeline.map((e) => e.id),
         ...state.pool.map((e) => e.id),
         ...(state.current ? [state.current.id] : []),
       ]);
       const existingKeys = new Set<string>([
-        ...state.timeline.map((e) => `${e.title.toLowerCase()}|${e.year}`),
-        ...state.pool.map((e) => `${e.title.toLowerCase()}|${e.year}`),
+        ...state.timeline.map((e) => dedupKey(e.title, e.year)),
+        ...state.pool.map((e) => dedupKey(e.title, e.year)),
         ...(state.current
-          ? [`${state.current.title.toLowerCase()}|${state.current.year}`]
+          ? [dedupKey(state.current.title, state.current.year)]
           : []),
       ]);
+      const existingWikiTitles = new Set<string>(
+        [
+          ...state.timeline,
+          ...state.pool,
+          ...(state.current ? [state.current] : []),
+        ]
+          .map((e) =>
+            (e.wikipediaTitle ?? e.title).toLowerCase().replace(/_/g, " "),
+          ),
+      );
       const fresh: TimelineEvent[] = [];
       for (const ev of action.events) {
         if (existingIds.has(ev.id)) continue;
-        const key = `${ev.title.toLowerCase()}|${ev.year}`;
+        const key = dedupKey(ev.title, ev.year);
         if (existingKeys.has(key)) continue;
+        const wikiKey = (ev.wikipediaTitle ?? ev.title)
+          .toLowerCase()
+          .replace(/_/g, " ");
+        if (existingWikiTitles.has(wikiKey)) continue;
         existingIds.add(ev.id);
         existingKeys.add(key);
+        existingWikiTitles.add(wikiKey);
         fresh.push(ev);
       }
       if (fresh.length === 0) return state;
-      // Append the new events at the end of the deck so the player's
-      // current sequence isn't disrupted.
-      return { ...state, pool: [...state.pool, ...shuffle(fresh)] };
+      // Caller is expected to have applied unseen-priority weighting already;
+      // preserve their order so the bias holds.
+      return { ...state, pool: [...state.pool, ...fresh] };
     }
 
     case "restart": {

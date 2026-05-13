@@ -14,16 +14,19 @@ import {
   EVENTS_BY_SUBCATEGORY,
   getEventsForSubcategories,
 } from "@/game/data";
-import type { CategoryId, Difficulty } from "@/game/types";
+import type { CategoryId, Difficulty, GameMode } from "@/game/types";
 
 type Props = {
   selected: string[];
   difficulty: Difficulty;
+  mode: GameMode;
   loading?: boolean;
   onToggleSub: (subId: string) => void;
   onToggleCategory: (id: CategoryId) => void;
   onChangeDifficulty: (d: Difficulty) => void;
+  onChangeMode: (m: GameMode) => void;
   onStart: () => void;
+  onResume?: () => void;
 };
 
 const DIFFICULTIES: Array<{
@@ -32,19 +35,49 @@ const DIFFICULTIES: Array<{
   gap: string;
   description: string;
 }> = [
-  { id: "easy", label: "Easy", gap: "100 yrs", description: "Forgiving spacing" },
-  { id: "medium", label: "Medium", gap: "50 yrs", description: "Default balance" },
+  {
+    id: "easy",
+    label: "Easy",
+    gap: "100 yrs",
+    description: "Forgiving spacing",
+  },
+  {
+    id: "medium",
+    label: "Medium",
+    gap: "50 yrs",
+    description: "Default balance",
+  },
   { id: "hard", label: "Hard", gap: "10 yrs", description: "Tight order" },
+];
+
+const MODES: Array<{
+  id: GameMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "timeline",
+    label: "Timeline",
+    description: "Drag each event onto the chronological row.",
+  },
+  {
+    id: "reverse",
+    label: "Reverse",
+    description: "Pick which event happened in the shown year.",
+  },
 ];
 
 export default function CategoryPicker({
   selected,
   difficulty,
+  mode,
   loading,
   onToggleSub,
   onToggleCategory,
   onChangeDifficulty,
+  onChangeMode,
   onStart,
+  onResume,
 }: Props) {
   const selectedSet = useMemo(() => new Set(selected), [selected]);
   const total = useMemo(
@@ -63,6 +96,53 @@ export default function CategoryPicker({
 
   return (
     <Box>
+      {onResume && (
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            p: 2,
+            mb: 3,
+            borderRadius: 1,
+            border: 1.5,
+            borderColor: "primary.main",
+            backgroundColor: "rgba(201, 168, 73, 0.06)",
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "primary.main",
+                fontFamily: "var(--font-mono), monospace",
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+                fontSize: 10,
+                display: "block",
+                mb: 0.25,
+              }}
+            >
+              Game in progress
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: "text.primary" }}>
+              Starting a new run will discard your current game.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={onResume}
+            sx={{
+              flexShrink: 0,
+              letterSpacing: "0.18em",
+              fontSize: 12,
+            }}
+          >
+            Resume
+          </Button>
+        </Box>
+      )}
       <Typography
         variant="h2"
         sx={{
@@ -75,9 +155,62 @@ export default function CategoryPicker({
         Set up your run
       </Typography>
       <Typography color="text.secondary" sx={{ mb: 3, fontSize: 14 }}>
-        Pick a difficulty, hit start. Tap "Categories" if you want to change
-        the source pool.
+        Pick a difficulty, hit start. Tap "Categories" if you want to change the
+        source pool.
       </Typography>
+
+      {/* Mode */}
+      <SectionLabel>Mode</SectionLabel>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
+        {MODES.map((m) => {
+          const active = m.id === mode;
+          return (
+            <Box
+              key={m.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => onChangeMode(m.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChangeMode(m.id);
+                }
+              }}
+              sx={{
+                flex: 1,
+                px: 1.5,
+                py: 1.25,
+                borderRadius: 1,
+                border: 1,
+                borderColor: active ? "primary.main" : "divider",
+                backgroundColor: active ? "action.selected" : "transparent",
+                cursor: "pointer",
+                transition: "border-color .15s, background .15s",
+                outline: "none",
+                "&:hover": {
+                  borderColor: active ? "primary.main" : "text.secondary",
+                },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 16,
+                  fontWeight: 500,
+                  color: active ? "primary.main" : "text.primary",
+                }}
+              >
+                {m.label}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{ display: "block", color: "text.secondary", mt: 0.25 }}
+              >
+                {m.description}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Stack>
 
       {/* Difficulty */}
       <SectionLabel>Difficulty</SectionLabel>
@@ -107,13 +240,19 @@ export default function CategoryPicker({
                 cursor: "pointer",
                 transition: "border-color .15s, background .15s",
                 outline: "none",
-                "&:hover": { borderColor: active ? "primary.main" : "text.secondary" },
+                "&:hover": {
+                  borderColor: active ? "primary.main" : "text.secondary",
+                },
                 "&:focus-visible": {
                   boxShadow: (t) => `0 0 0 2px ${t.palette.primary.main}44`,
                 },
               }}
             >
-              <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="baseline"
+              >
                 <Typography
                   sx={{
                     fontSize: 16,
@@ -126,7 +265,7 @@ export default function CategoryPicker({
                 <Typography
                   variant="caption"
                   sx={{
-                    fontFamily: 'var(--font-jetbrains), monospace',
+                    fontFamily: "var(--font-mono), monospace",
                     letterSpacing: "0.12em",
                     color: "text.secondary",
                     fontSize: 10,
@@ -170,7 +309,7 @@ export default function CategoryPicker({
           display: "block",
           textAlign: "center",
           color: "text.secondary",
-          fontFamily: 'var(--font-jetbrains), monospace',
+          fontFamily: "var(--font-mono), monospace",
           fontSize: 10,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -225,7 +364,7 @@ export default function CategoryPicker({
           </Box>
           <Typography
             sx={{
-              fontFamily: 'var(--font-jetbrains), monospace',
+              fontFamily: "var(--font-mono), monospace",
               fontSize: 11,
               letterSpacing: "0.26em",
               textTransform: "uppercase",
@@ -237,7 +376,7 @@ export default function CategoryPicker({
           <Typography
             variant="caption"
             sx={{
-              fontFamily: 'var(--font-jetbrains), monospace',
+              fontFamily: "var(--font-mono), monospace",
               fontSize: 10,
               letterSpacing: "0.12em",
               color: "text.secondary",
@@ -306,7 +445,8 @@ export default function CategoryPicker({
                       mb: 1.25,
                       "&:focus-visible": {
                         outline: "none",
-                        boxShadow: (t) => `0 0 0 2px ${t.palette.primary.main}33`,
+                        boxShadow: (t) =>
+                          `0 0 0 2px ${t.palette.primary.main}33`,
                       },
                     }}
                   >
@@ -324,20 +464,23 @@ export default function CategoryPicker({
                       }}
                     >
                       <cat.Icon size={18} strokeWidth={1.5} />
-                      <Typography sx={{ fontSize: 18, fontWeight: 500, color: "inherit" }}>
+                      <Typography
+                        sx={{ fontSize: 18, fontWeight: 500, color: "inherit" }}
+                      >
                         {cat.name}
                       </Typography>
                     </Box>
                     <Typography
                       variant="caption"
                       sx={{
-                        fontFamily: 'var(--font-jetbrains), monospace',
+                        fontFamily: "var(--font-mono), monospace",
                         letterSpacing: "0.12em",
                         color: "text.secondary",
                         fontSize: 10,
                       }}
                     >
-                      {selectedSubs.length}/{subIds.length} · {selectedCount}/{catTotal}
+                      {selectedSubs.length}/{subIds.length} · {selectedCount}/
+                      {catTotal}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
@@ -362,7 +505,8 @@ export default function CategoryPicker({
                               <Box
                                 component="span"
                                 sx={{
-                                  fontFamily: 'var(--font-jetbrains), monospace',
+                                  fontFamily:
+                                    "var(--font-mono), monospace",
                                   fontSize: 10,
                                   opacity: 0.65,
                                 }}
@@ -392,7 +536,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     <Typography
       variant="caption"
       sx={{
-        fontFamily: 'var(--font-jetbrains), monospace',
+        fontFamily: "var(--font-mono), monospace",
         letterSpacing: "0.28em",
         color: "text.secondary",
         textTransform: "uppercase",

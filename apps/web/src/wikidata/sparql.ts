@@ -98,7 +98,8 @@ export async function runSparql(
     }
     writeCache(cacheKey, out);
     return out;
-  } catch {
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError") throw err;
     return null;
   } finally {
     window.clearTimeout(timeoutId);

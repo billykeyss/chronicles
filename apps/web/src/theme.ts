@@ -62,12 +62,12 @@ export function buildTheme(mode: ThemeMode): Theme {
     shape: { borderRadius: 4 },
     typography: {
       fontFamily:
-        'var(--font-fraunces), "Fraunces", Georgia, "Times New Roman", serif',
+        'var(--font-display), "Fraunces", Georgia, "Times New Roman", serif',
       h1: { fontWeight: 400, letterSpacing: "-0.02em" },
       h2: { fontWeight: 400, letterSpacing: "-0.015em" },
       h3: { fontWeight: 500, letterSpacing: "-0.01em" },
       button: {
-        fontFamily: 'var(--font-fraunces), Georgia, serif',
+        fontFamily: "var(--font-display), Georgia, serif",
         textTransform: "none",
         letterSpacing: "0.01em",
         fontWeight: 500,
@@ -91,7 +91,7 @@ export function buildTheme(mode: ThemeMode): Theme {
           root: {
             borderRadius: 4,
             paddingInline: 16,
-            fontFamily: 'var(--font-jetbrains), "JetBrains Mono", monospace',
+            fontFamily: 'var(--font-mono), "JetBrains Mono", monospace',
             fontSize: 12,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
@@ -116,7 +116,7 @@ export function buildTheme(mode: ThemeMode): Theme {
           root: {
             borderRadius: 999,
             fontWeight: 400,
-            fontFamily: 'var(--font-fraunces), Georgia, serif',
+            fontFamily: "var(--font-display), Georgia, serif",
             letterSpacing: 0,
           },
           filled: {
@@ -143,7 +143,7 @@ export function buildTheme(mode: ThemeMode): Theme {
       MuiDialogTitle: {
         styleOverrides: {
           root: {
-            fontFamily: 'var(--font-fraunces), Georgia, serif',
+            fontFamily: "var(--font-display), Georgia, serif",
             fontWeight: 400,
             letterSpacing: "-0.01em",
             fontSize: 22,
@@ -157,7 +157,7 @@ export function buildTheme(mode: ThemeMode): Theme {
             backgroundColor: p.panelHi,
             color: p.text,
             border: `1px solid ${p.divider}`,
-            fontFamily: 'var(--font-fraunces), serif',
+            fontFamily: "var(--font-display), serif",
           },
         },
       },

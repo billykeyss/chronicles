@@ -4,6 +4,7 @@ export type WikipediaSummary = {
   extract: string;
   url: string;
   thumbnail?: { url: string; width: number; height: number };
+  original?: { url: string; width: number; height: number };
 };
 
 const SUMMARY_BASE = "https://en.wikipedia.org/api/rest_v1/page/summary/";
@@ -66,7 +67,10 @@ export async function fetchWikipediaSummary(
   // 3. Network
   try {
     const url = `${SUMMARY_BASE}${encodeURIComponent(title.replace(/ /g, "_"))}`;
-    const res = await fetch(url, { signal, headers: { accept: "application/json" } });
+    const res = await fetch(url, {
+      signal,
+      headers: { accept: "application/json" },
+    });
     if (!res.ok) {
       memoryCache.set(title, null);
       writeStorage(title, null);
@@ -79,6 +83,7 @@ export async function fetchWikipediaSummary(
       extract?: string;
       content_urls?: { desktop?: { page?: string } };
       thumbnail?: { source: string; width: number; height: number };
+      originalimage?: { source: string; width: number; height: number };
     };
     if (data.type === "disambiguation" || !data.extract) {
       memoryCache.set(title, null);
@@ -95,6 +100,13 @@ export async function fetchWikipediaSummary(
             url: data.thumbnail.source,
             width: data.thumbnail.width,
             height: data.thumbnail.height,
+          }
+        : undefined,
+      original: data.originalimage
+        ? {
+            url: data.originalimage.source,
+            width: data.originalimage.width,
+            height: data.originalimage.height,
           }
         : undefined,
     };
