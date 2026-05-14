@@ -291,7 +291,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case "use-hint": {
       if (
         state.status !== "playing" ||
-        state.hintsRemaining <= 0 ||
         state.hintUsedOnCurrent !== null
       ) {
         return state;
@@ -315,7 +314,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           );
           return {
             ...state,
-            hintsRemaining: state.hintsRemaining - 1,
             hintUsedOnCurrent: action.hintType,
             reverseRound: { ...round, choices: newChoices },
             hintReveal: {
@@ -334,7 +332,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         );
         return {
           ...state,
-          hintsRemaining: state.hintsRemaining - 1,
           hintUsedOnCurrent: action.hintType,
           hintReveal: reveal,
         };
@@ -354,7 +351,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       );
       return {
         ...state,
-        hintsRemaining: state.hintsRemaining - 1,
         hintUsedOnCurrent: action.hintType,
         hintReveal: reveal,
       };

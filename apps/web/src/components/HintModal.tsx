@@ -15,7 +15,6 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onChoose: (hintType: HintType) => void;
-  hintsRemaining: number;
 };
 
 const OPTIONS: Array<{
@@ -44,15 +43,13 @@ export default function HintModal({
   open,
   onClose,
   onChoose,
-  hintsRemaining,
 }: Props) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Consult the oracle</DialogTitle>
       <DialogContent>
         <Typography color="text.secondary" sx={{ fontSize: 14, mb: 2 }}>
-          The oracle will speak {hintsRemaining} more time
-          {hintsRemaining === 1 ? "" : "s"}. Clearer visions cost more points.
+          Once per card. Clearer visions cost more points.
         </Typography>
         <Stack spacing={1}>
           {OPTIONS.map((opt) => (

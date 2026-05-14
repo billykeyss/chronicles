@@ -52,13 +52,12 @@ export default function ReversePanel({
         </Typography>
         <Typography
           sx={{
-            fontFamily: 'var(--font-display), serif',
-            fontVariationSettings: '"opsz" 144',
-            fontWeight: 300,
-            fontSize: { xs: 64, sm: 88, md: 104 },
+            fontFamily: 'var(--font-numerals), serif',
+            fontWeight: 400,
+            fontSize: { xs: 72, sm: 104, md: 128 },
             color: "primary.main",
             lineHeight: 0.95,
-            letterSpacing: "-0.04em",
+            letterSpacing: "-0.02em",
           }}
         >
           {formatYear(round.year)}

@@ -30,13 +30,22 @@
  *   Fira_Code          — coding ligatures
  *   DM_Mono            — quirky, narrow
  */
-import { Fraunces, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 
-/** Display font — drives body text, headings, year tags. */
+/** Display font — drives body text, headings, titles. */
 export const displayFont = Fraunces({
   variable: "--font-display",
   subsets: ["latin"],
   axes: ["opsz", "SOFT"],
+  display: "swap",
+});
+
+/** Numerals font — drives year tags & big number displays. */
+export const numeralsFont = Instrument_Serif({
+  variable: "--font-numerals",
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -48,5 +57,5 @@ export const monoFont = JetBrains_Mono({
   display: "swap",
 });
 
-/** Convenience — apply both font CSS variables to <html>. */
-export const fontClassNames = `${displayFont.variable} ${monoFont.variable}`;
+/** Convenience — apply all font CSS variables to <html>. */
+export const fontClassNames = `${displayFont.variable} ${numeralsFont.variable} ${monoFont.variable}`;

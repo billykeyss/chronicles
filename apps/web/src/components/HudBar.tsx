@@ -5,14 +5,13 @@ import ButtonBase from "@mui/material/ButtonBase";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { Lightbulb, Moon, RotateCcw, Sun } from "lucide-react";
-import { STRIKES_MAX, HINTS_PER_GAME, type HintType } from "@/game/types";
+import { STRIKES_MAX, type HintType } from "@/game/types";
 import { useThemeMode } from "./ThemeModeProvider";
 
 type Props = {
   score: number;
   streak: number;
   strikes: number;
-  hintsRemaining: number;
   hintUsed?: HintType | null;
   onNewGame?: () => void;
   onUseHint?: () => void;
@@ -23,7 +22,6 @@ export default function HudBar({
   score,
   streak,
   strikes,
-  hintsRemaining,
   hintUsed,
   onNewGame,
   onUseHint,
@@ -31,7 +29,7 @@ export default function HudBar({
 }: Props) {
   const livesLeft = STRIKES_MAX - strikes;
   const { mode, toggleMode } = useThemeMode();
-  const canHint = onUseHint && hintsRemaining > 0 && !hintUsed;
+  const canHint = onUseHint && !hintUsed;
 
   return (
     <Box
@@ -117,14 +115,6 @@ export default function HudBar({
           <Box>
             <Label>Lives</Label>
             <Pips count={STRIKES_MAX} filled={livesLeft} color="error.main" />
-          </Box>
-          <Box>
-            <Label>Oracles</Label>
-            <Pips
-              count={HINTS_PER_GAME}
-              filled={hintsRemaining}
-              color="primary.main"
-            />
           </Box>
         </Box>
 

@@ -6,8 +6,10 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import { X } from "lucide-react";
 
 type Props = {
   open: boolean;
@@ -18,6 +20,7 @@ type Props = {
   ranOutOfEvents: boolean;
   onRestart: () => void;
   onChangeCategories: () => void;
+  onClose?: () => void;
 };
 
 function rankFor(score: number) {
@@ -37,14 +40,32 @@ export default function GameOverDialog({
   ranOutOfEvents,
   onRestart,
   onChangeCategories,
+  onClose,
 }: Props) {
   const rank = rankFor(score);
   const accuracy =
     placements === 0 ? 0 : Math.round((correctPlacements / placements) * 100);
 
   return (
-    <Dialog open={open} fullWidth maxWidth="xs">
-      <DialogTitle>{ranOutOfEvents ? "Pool cleared" : "Game over"}</DialogTitle>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ pr: onClose ? 6 : undefined }}>
+        {ranOutOfEvents ? "Pool cleared" : "Game over"}
+        {onClose && (
+          <IconButton
+            onClick={onClose}
+            aria-label="Close"
+            size="small"
+            sx={{
+              position: "absolute",
+              top: 12,
+              right: 12,
+              color: "text.secondary",
+            }}
+          >
+            <X size={16} strokeWidth={1.5} />
+          </IconButton>
+        )}
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
           <Box>
@@ -112,7 +133,12 @@ export default function GameOverDialog({
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 2, flexWrap: "wrap" }}>
+        {onClose && (
+          <Button onClick={onClose} sx={{ mr: "auto" }}>
+            Review timeline
+          </Button>
+        )}
         <Button onClick={onChangeCategories}>Change categories</Button>
         <Button variant="contained" onClick={onRestart}>
           Play again

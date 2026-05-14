@@ -25,7 +25,6 @@ export function NowDrawingPanel({
   thumbnailUrl,
   originalUrl,
   hintReveal,
-  hintsRemaining,
   hintUsed,
   onOpenHint,
 }: {
@@ -33,12 +32,11 @@ export function NowDrawingPanel({
   thumbnailUrl?: string;
   originalUrl?: string;
   hintReveal: HintReveal | null;
-  hintsRemaining?: number;
   hintUsed?: HintType | null;
   onOpenHint?: () => void;
 }) {
   const cat = CATEGORY_BY_ID[event.category];
-  const canHint = Boolean(onOpenHint) && (hintsRemaining ?? 0) > 0 && !hintUsed;
+  const canHint = Boolean(onOpenHint) && !hintUsed;
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const largeUrl = originalUrl ?? thumbnailUrl;
   const canOpenLightbox = Boolean(thumbnailUrl) && Boolean(largeUrl);

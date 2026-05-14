@@ -25,6 +25,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
+import { Lock } from "lucide-react";
 import CategoryPicker from "@/components/CategoryPicker";
 import { CurrentCardPreview, NowDrawingPanel } from "@/components/CurrentCard";
 import GameOverDialog from "@/components/GameOverDialog";
@@ -33,7 +34,10 @@ import HudBar from "@/components/HudBar";
 import ResultToast from "@/components/ResultToast";
 import ReversePanel from "@/components/ReversePanel";
 import Timeline from "@/components/Timeline";
-import TimelineRail from "@/components/TimelineRail";
+import TimelineRail, {
+  RailOrientation,
+  TimelineLayout,
+} from "@/components/TimelineRail";
 import { getEventsForSubcategories, SUBCATEGORY_BY_ID } from "@/game/data";
 import { gameReducer, initialState } from "@/game/state";
 import {
@@ -56,6 +60,62 @@ import {
 const NEXT_CARD_DELAY_MS = 450;
 const TOAST_VISIBLE_MS = 2800;
 const PREFETCH_AHEAD = 8;
+
+function LayoutToggle({
+  value,
+  onChange,
+}: {
+  value: TimelineLayout;
+  onChange: (next: TimelineLayout) => void;
+}) {
+  const options: Array<{ key: TimelineLayout; label: string }> = [
+    { key: TimelineLayout.Stacked, label: "Stacked" },
+    { key: TimelineLayout.Spread, label: "Spread" },
+  ];
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        gap: 1,
+        fontFamily: "var(--font-mono), monospace",
+        fontSize: 10,
+        letterSpacing: "0.22em",
+        textTransform: "uppercase",
+        color: "text.secondary",
+      }}
+    >
+      <Box component="span">Timeline ·</Box>
+      {options.map((opt, i) => (
+        <Box key={opt.key} component="span" sx={{ display: "inline-flex", alignItems: "baseline", gap: 1 }}>
+          <Box
+            component="button"
+            type="button"
+            onClick={() => onChange(opt.key)}
+            sx={{
+              all: "unset",
+              cursor: "pointer",
+              color: value === opt.key ? "primary.main" : "text.secondary",
+              borderBottom: 1,
+              borderColor:
+                value === opt.key ? "primary.main" : "transparent",
+              pb: "1px",
+              transition: "color .15s, border-color .15s",
+              "&:hover": { color: "primary.main" },
+            }}
+          >
+            {opt.label}
+          </Box>
+          {i < options.length - 1 && (
+            <Box component="span" sx={{ opacity: 0.4 }}>
+              /
+            </Box>
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 /**
  * Shuffle a pool with a bias toward unseen events. Each event gets a random
@@ -110,6 +170,10 @@ export default function HomePage() {
   const [hintOpen, setHintOpen] = useState(false);
   const [confirmNewGameOpen, setConfirmNewGameOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [gameOverDismissed, setGameOverDismissed] = useState(false);
+  useEffect(() => {
+    if (state.status !== "gameover") setGameOverDismissed(false);
+  }, [state.status]);
   const [toastOpen, setToastOpen] = useState(false);
   const [shownResult, setShownResult] = useState<typeof state.lastResult>(null);
   const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(
@@ -124,6 +188,9 @@ export default function HomePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [insertIdx, setInsertIdx] = useState<number | null>(null);
   const [poolLoading, setPoolLoading] = useState(false);
+  const [railLayout, setRailLayout] = useState<TimelineLayout>(
+    TimelineLayout.Stacked,
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -366,7 +433,7 @@ export default function HomePage() {
 
   return (
     <Container
-      maxWidth="lg"
+      maxWidth={false}
       sx={{
         py: { xs: 1, sm: 2 },
         px: { xs: 2, sm: 3, md: 4 },
@@ -406,7 +473,6 @@ export default function HomePage() {
                 score={state.score}
                 streak={state.streak}
                 strikes={state.strikes}
-                hintsRemaining={state.hintsRemaining}
                 hintUsed={state.hintUsedOnCurrent}
                 onUseHint={
                   state.status === "playing" &&
@@ -492,33 +558,43 @@ export default function HomePage() {
           )}
 
           {hydrated && (state.status === "picking" || menuOpen) && (
-            <CategoryPicker
-              selected={state.selectedSubcategories}
-              difficulty={state.difficulty}
-              mode={state.mode}
-              loading={poolLoading}
-              onToggleSub={(subId) =>
-                dispatch({ type: "toggle-subcategory", subcategory: subId })
-              }
-              onToggleCategory={(catId) =>
-                dispatch({ type: "toggle-category-all", category: catId })
-              }
-              onChangeDifficulty={(d) =>
-                dispatch({ type: "set-difficulty", difficulty: d })
-              }
-              onChangeMode={(m) => dispatch({ type: "set-mode", mode: m })}
-              onStart={() => {
-                setMenuOpen(false);
-                setThumbnails({});
-                clearPersistedState();
-                handleStart();
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: 760,
+                alignSelf: "center",
+                px: { xs: 1, sm: 2 },
+                py: { xs: 2, sm: 4 },
               }}
-              onResume={
-                menuOpen && state.status !== "picking"
-                  ? () => setMenuOpen(false)
-                  : undefined
-              }
-            />
+            >
+              <CategoryPicker
+                selected={state.selectedSubcategories}
+                difficulty={state.difficulty}
+                mode={state.mode}
+                loading={poolLoading}
+                onToggleSub={(subId) =>
+                  dispatch({ type: "toggle-subcategory", subcategory: subId })
+                }
+                onToggleCategory={(catId) =>
+                  dispatch({ type: "toggle-category-all", category: catId })
+                }
+                onChangeDifficulty={(d) =>
+                  dispatch({ type: "set-difficulty", difficulty: d })
+                }
+                onChangeMode={(m) => dispatch({ type: "set-mode", mode: m })}
+                onStart={() => {
+                  setMenuOpen(false);
+                  setThumbnails({});
+                  clearPersistedState();
+                  handleStart();
+                }}
+                onResume={
+                  menuOpen && state.status !== "picking"
+                    ? () => setMenuOpen(false)
+                    : undefined
+                }
+              />
+            </Box>
           )}
 
           {hydrated &&
@@ -546,42 +622,6 @@ export default function HomePage() {
             (isDesktop ? (
               /* Desktop — horizontal procession rail */
               <Stack spacing={2.5} sx={{ alignItems: "stretch" }}>
-                {state.status === "playing" && state.current && (
-                  <Box
-                    sx={{
-                      maxWidth: 420,
-                      width: "100%",
-                      mx: "auto",
-                    }}
-                  >
-                    <NowDrawingPanel
-                      event={state.current}
-                      thumbnailUrl={
-                        currentSummary?.thumbnail?.url ??
-                        thumbnails[state.current.id]
-                      }
-                      originalUrl={currentSummary?.original?.url}
-                      hintReveal={state.hintReveal}
-                      hintsRemaining={state.hintsRemaining}
-                      hintUsed={state.hintUsedOnCurrent}
-                      onOpenHint={() => setHintOpen(true)}
-                    />
-                    <Typography
-                      sx={{
-                        mt: 1,
-                        textAlign: "center",
-                        fontFamily: "var(--font-mono), monospace",
-                        fontSize: 10,
-                        letterSpacing: "0.28em",
-                        textTransform: "uppercase",
-                        color: "text.secondary",
-                      }}
-                    >
-                      ↓ drop on the rail to place
-                    </Typography>
-                  </Box>
-                )}
-
                 <Stack spacing={1}>
                   <Box
                     sx={{
@@ -592,30 +632,88 @@ export default function HomePage() {
                       gap: 1,
                     }}
                   >
-                    <Typography
-                      variant="caption"
+                    <Box
                       sx={{
-                        color: "text.secondary",
-                        fontFamily: "var(--font-mono), monospace",
-                        letterSpacing: "0.28em",
-                        textTransform: "uppercase",
-                        fontSize: 10,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 1.5,
                       }}
                     >
-                      Timeline · procession
-                    </Typography>
-                    <Typography
-                      variant="caption"
+                      <LayoutToggle
+                        value={railLayout}
+                        onChange={setRailLayout}
+                      />
+                      {state.status === "gameover" && (
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            px: 0.875,
+                            py: 0.375,
+                            borderRadius: 0.75,
+                            border: 1,
+                            borderColor: "text.secondary",
+                            color: "text.secondary",
+                            opacity: 0.85,
+                          }}
+                        >
+                          <Lock size={11} strokeWidth={1.5} />
+                          <Typography
+                            sx={{
+                              fontFamily: "var(--font-mono), monospace",
+                              fontSize: 9.5,
+                              letterSpacing: "0.22em",
+                              textTransform: "uppercase",
+                              lineHeight: 1,
+                            }}
+                          >
+                            Locked
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    <Box
                       sx={{
-                        color: "text.secondary",
-                        fontFamily: "var(--font-mono), monospace",
-                        letterSpacing: "0.16em",
-                        fontSize: 10,
+                        display: "inline-flex",
+                        alignItems: "baseline",
+                        gap: 1.5,
                       }}
                     >
-                      {state.timeline.length} placed ·{" "}
-                      {state.pool.length} in deck
-                    </Typography>
+                      {state.status === "gameover" && gameOverDismissed && (
+                        <Box
+                          component="button"
+                          type="button"
+                          onClick={() => setGameOverDismissed(false)}
+                          sx={{
+                            all: "unset",
+                            cursor: "pointer",
+                            color: "primary.main",
+                            fontFamily: "var(--font-mono), monospace",
+                            fontSize: 10,
+                            letterSpacing: "0.22em",
+                            textTransform: "uppercase",
+                            borderBottom: 1,
+                            borderColor: "primary.main",
+                            "&:hover": { opacity: 0.75 },
+                          }}
+                        >
+                          Show final results
+                        </Box>
+                      )}
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "text.secondary",
+                          fontFamily: "var(--font-mono), monospace",
+                          letterSpacing: "0.16em",
+                          fontSize: 10,
+                        }}
+                      >
+                        {state.timeline.length} placed ·{" "}
+                        {state.pool.length} in deck
+                      </Typography>
+                    </Box>
                   </Box>
 
                   <TimelineRail
@@ -624,8 +722,44 @@ export default function HomePage() {
                     summaries={summaries}
                     insertIdx={insertIdx}
                     dragging={activeId !== null}
+                    layout={railLayout}
                   />
                 </Stack>
+
+                {state.status === "playing" && state.current && (
+                  <Box
+                    sx={{
+                      width: "100%",
+                      maxWidth: 420,
+                      alignSelf: "center",
+                    }}
+                  >
+                    <Typography
+                      sx={{
+                        mb: 1,
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono), monospace",
+                        fontSize: 10,
+                        letterSpacing: "0.28em",
+                        textTransform: "uppercase",
+                        color: "text.secondary",
+                      }}
+                    >
+                      ↑ drag onto the rail to place
+                    </Typography>
+                    <NowDrawingPanel
+                      event={state.current}
+                      thumbnailUrl={
+                        currentSummary?.thumbnail?.url ??
+                        thumbnails[state.current.id]
+                      }
+                      originalUrl={currentSummary?.original?.url}
+                      hintReveal={state.hintReveal}
+                      hintUsed={state.hintUsedOnCurrent}
+                      onOpenHint={() => setHintOpen(true)}
+                    />
+                  </Box>
+                )}
               </Stack>
             ) : (
               /* Mobile — existing vertical timeline with bottom-pinned panel */
@@ -660,7 +794,6 @@ export default function HomePage() {
                       }
                       originalUrl={currentSummary?.original?.url}
                       hintReveal={state.hintReveal}
-                      hintsRemaining={state.hintsRemaining}
                       hintUsed={state.hintUsedOnCurrent}
                       onOpenHint={() => setHintOpen(true)}
                     />
@@ -672,23 +805,52 @@ export default function HomePage() {
                     sx={{
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "baseline",
+                      alignItems: "center",
                       flexWrap: "wrap",
                       gap: 1,
                     }}
                   >
-                    <Typography
-                      variant="caption"
+                    <Box
                       sx={{
-                        color: "text.secondary",
-                        fontFamily: "var(--font-mono), monospace",
-                        letterSpacing: "0.28em",
-                        textTransform: "uppercase",
-                        fontSize: 10,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 1.5,
                       }}
                     >
-                      Timeline
-                    </Typography>
+                      <LayoutToggle
+                        value={railLayout}
+                        onChange={setRailLayout}
+                      />
+                      {state.status === "gameover" && (
+                        <Box
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                            px: 0.875,
+                            py: 0.375,
+                            borderRadius: 0.75,
+                            border: 1,
+                            borderColor: "text.secondary",
+                            color: "text.secondary",
+                            opacity: 0.85,
+                          }}
+                        >
+                          <Lock size={11} strokeWidth={1.5} />
+                          <Typography
+                            sx={{
+                              fontFamily: "var(--font-mono), monospace",
+                              fontSize: 9.5,
+                              letterSpacing: "0.22em",
+                              textTransform: "uppercase",
+                              lineHeight: 1,
+                            }}
+                          >
+                            Locked
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
                     <Typography
                       variant="caption"
                       sx={{
@@ -703,13 +865,25 @@ export default function HomePage() {
                     </Typography>
                   </Box>
 
-                  <Timeline
-                    timeline={state.timeline}
-                    thumbnails={thumbnails}
-                    summaries={summaries}
-                    insertIdx={insertIdx}
-                    dragging={activeId !== null}
-                  />
+                  {railLayout === TimelineLayout.Spread ? (
+                    <TimelineRail
+                      timeline={state.timeline}
+                      thumbnails={thumbnails}
+                      summaries={summaries}
+                      insertIdx={insertIdx}
+                      dragging={activeId !== null}
+                      layout={railLayout}
+                      orientation={RailOrientation.Vertical}
+                    />
+                  ) : (
+                    <Timeline
+                      timeline={state.timeline}
+                      thumbnails={thumbnails}
+                      summaries={summaries}
+                      insertIdx={insertIdx}
+                      dragging={activeId !== null}
+                    />
+                  )}
                 </Stack>
               </Box>
             ))}
@@ -729,7 +903,6 @@ export default function HomePage() {
         open={hintOpen}
         onClose={() => setHintOpen(false)}
         onChoose={handleChooseHint}
-        hintsRemaining={state.hintsRemaining}
       />
 
       <ResultToast
@@ -739,7 +912,9 @@ export default function HomePage() {
       />
 
       <GameOverDialog
-        open={state.status === "gameover" && !menuOpen}
+        open={
+          state.status === "gameover" && !menuOpen && !gameOverDismissed
+        }
         score={state.score}
         correctPlacements={state.correctPlacements}
         placements={state.placements}
@@ -756,6 +931,7 @@ export default function HomePage() {
           clearPersistedState();
           dispatch({ type: "restart" });
         }}
+        onClose={() => setGameOverDismissed(true)}
       />
 
       <Dialog

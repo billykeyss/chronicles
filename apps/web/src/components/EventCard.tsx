@@ -92,12 +92,11 @@ export default function EventCard({
         <Typography
           sx={{
             color: "primary.main",
-            fontFamily: "var(--font-display), serif",
-            fontVariationSettings: '"opsz" 96',
+            fontFamily: "var(--font-numerals), serif",
             fontWeight: 400,
-            fontSize: 18,
+            fontSize: 22,
             lineHeight: 1,
-            letterSpacing: "-0.015em",
+            letterSpacing: "-0.01em",
             whiteSpace: "nowrap",
           }}
         >
