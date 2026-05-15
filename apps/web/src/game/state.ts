@@ -114,14 +114,14 @@ function dedupKey(title: string, year: number): string {
 
 /**
  * Build a reverse-mode round: pick a random correct event from the pool, then
- * choose 2 distractors whose years are at least `minGap` away from the
- * correct year (and from each other).
+ * choose 2 distractors whose years are within `maxGap` of the correct year
+ * (and not the same year as the correct or each other). Tighter gaps = harder.
  *
  * Returns the round + the remaining pool (correct + 2 distractors removed).
  */
 function buildReverseRound(
   pool: TimelineEvent[],
-  minGap: number,
+  maxGap: number,
 ): { round: ReverseRound | null; remaining: TimelineEvent[] } {
   if (pool.length < 3) return { round: null, remaining: pool };
   // Trust the caller's pool ordering (so unseen-priority weighting holds).
@@ -134,14 +134,12 @@ function buildReverseRound(
     if (distractors.length === 2) break;
     if (ev.id === correct.id) continue;
     if (usedYears.has(ev.year)) continue;
-    const tooClose = Array.from(usedYears).some(
-      (y) => Math.abs(ev.year - y) < minGap,
-    );
-    if (tooClose) continue;
+    if (Math.abs(ev.year - correct.year) > maxGap) continue;
     distractors.push(ev);
     usedYears.add(ev.year);
   }
-  // Fallback: if difficulty made it impossible, accept smaller-gap distractors
+  // Fallback: if the pool doesn't have enough nearby events, accept any
+  // distractor with a different year so the round can still be built.
   if (distractors.length < 2) {
     for (const ev of pool.slice(1)) {
       if (distractors.length === 2) break;
@@ -245,11 +243,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         action.events && action.events.length > 0
           ? action.events
           : getEventsForSubcategories(state.selectedSubcategories);
-      const minGap = DIFFICULTY_GAP[state.difficulty];
+      const gap = DIFFICULTY_GAP[state.difficulty];
 
       if (state.mode === "reverse") {
         if (events.length < 3) return state;
-        const { round, remaining } = buildReverseRound(events, minGap);
+        const { round, remaining } = buildReverseRound(events, gap);
         if (!round) return state;
         return {
           ...initialState,
@@ -413,6 +411,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       if (state.mode === "reverse") {
         const { round, remaining } = buildReverseRound(state.pool, minGap);
+        // Note: in reverse mode the value is reinterpreted as a max gap.
         if (!round) {
           return {
             ...state,
@@ -531,9 +530,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         fresh.push(ev);
       }
       if (fresh.length === 0) return state;
-      // Caller is expected to have applied unseen-priority weighting already;
-      // preserve their order so the bias holds.
-      return { ...state, pool: [...state.pool, ...fresh] };
+      // Shuffle fresh SPARQL events into the remaining pool so they start
+      // surfacing immediately, instead of waiting behind the small bundled
+      // pool. The caller has already applied unseen-priority weighting to
+      // `fresh`, and `state.pool` was weighted at start — mixing them with a
+      // uniform shuffle is good enough at this point.
+      return { ...state, pool: shuffle([...state.pool, ...fresh]) };
     }
 
     case "restart": {

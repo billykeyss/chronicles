@@ -53,10 +53,15 @@ export default function HudBar({
               borderRadius: 0.5,
               px: 0.5,
               mx: -0.5,
+              display: "flex",
+              alignItems: "center",
+              gap: { xs: 0.75, sm: 1 },
               transition: "color .15s",
               "&:hover .chronicles-wordmark": { color: "primary.main" },
+              "&:hover .chronicles-mark": { transform: "rotate(-4deg)" },
             }}
           >
+            <ChroniclesMark />
             <Typography
               className="chronicles-wordmark"
               variant="h1"
@@ -76,20 +81,23 @@ export default function HudBar({
           </ButtonBase>
         </Tooltip>
       ) : (
-        <Typography
-          variant="h1"
-          sx={{
-            fontVariationSettings: '"opsz" 96, "SOFT" 50',
-            fontSize: { xs: 20, sm: 26, md: 30 },
-            color: "text.primary",
-            lineHeight: 1,
-            fontWeight: 300,
-            letterSpacing: "-0.015em",
-            flexShrink: 0,
-          }}
-        >
-          Chronicles
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 } }}>
+          <ChroniclesMark />
+          <Typography
+            variant="h1"
+            sx={{
+              fontVariationSettings: '"opsz" 96, "SOFT" 50',
+              fontSize: { xs: 20, sm: 26, md: 30 },
+              color: "text.primary",
+              lineHeight: 1,
+              fontWeight: 300,
+              letterSpacing: "-0.015em",
+              flexShrink: 0,
+            }}
+          >
+            Chronicles
+          </Typography>
+        </Box>
       )}
 
       <Box
@@ -276,6 +284,27 @@ const iconButtonSx = {
     cursor: "not-allowed",
   },
 };
+
+function ChroniclesMark() {
+  const { mode } = useThemeMode();
+  return (
+    <Box
+      component="img"
+      className="chronicles-mark"
+      src={mode === "light" ? "/logo-light.svg" : "/logo.svg"}
+      alt=""
+      aria-hidden
+      sx={{
+        width: { xs: 26, sm: 32, md: 36 },
+        height: { xs: 26, sm: 32, md: 36 },
+        flexShrink: 0,
+        display: "block",
+        transition: "transform .25s cubic-bezier(.2,.8,.2,1)",
+        transformOrigin: "center",
+      }}
+    />
+  );
+}
 
 function Label({ children }: { children: React.ReactNode }) {
   return (

@@ -31,6 +31,7 @@ import { CurrentCardPreview, NowDrawingPanel } from "@/components/CurrentCard";
 import GameOverDialog from "@/components/GameOverDialog";
 import HintModal from "@/components/HintModal";
 import HudBar from "@/components/HudBar";
+import { useThemeMode } from "@/components/ThemeModeProvider";
 import ResultToast from "@/components/ResultToast";
 import ReversePanel from "@/components/ReversePanel";
 import Timeline from "@/components/Timeline";
@@ -140,6 +141,7 @@ function weightedShuffle<T extends { id: string }>(
 
 export default function HomePage() {
   const theme = useTheme();
+  const { mode: themeMode } = useThemeMode();
   const isDesktop = useMediaQuery(theme.breakpoints.up("md"), { noSsr: true });
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [hydrated, setHydrated] = useState(false);
@@ -567,6 +569,62 @@ export default function HomePage() {
                 py: { xs: 2, sm: 4 },
               }}
             >
+              <Box
+                sx={{
+                  textAlign: "center",
+                  mb: { xs: 5, sm: 7 },
+                  pt: { xs: 2, sm: 4 },
+                }}
+              >
+                <Box
+                  component="img"
+                  src={themeMode === "light" ? "/logo-light.svg" : "/logo.svg"}
+                  alt="Chronicles"
+                  sx={{
+                    width: { xs: 72, sm: 88, md: 104 },
+                    height: { xs: 72, sm: 88, md: 104 },
+                    display: "block",
+                    mx: "auto",
+                    mb: { xs: 2, sm: 2.5 },
+                  }}
+                />
+                <Typography
+                  variant="h1"
+                  sx={{
+                    fontFamily: "var(--font-display), serif",
+                    fontVariationSettings: '"opsz" 144, "SOFT" 50',
+                    fontSize: { xs: 44, sm: 56, md: 64 },
+                    fontWeight: 300,
+                    lineHeight: 1,
+                    letterSpacing: "-0.02em",
+                    color: "text.primary",
+                    mb: 1.5,
+                  }}
+                >
+                  Chronicles
+                </Typography>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: { xs: 10, sm: 11 },
+                    letterSpacing: "0.3em",
+                    textTransform: "uppercase",
+                    color: "text.secondary",
+                  }}
+                >
+                  A Wikipedia timeline trivia game
+                </Typography>
+                <Box
+                  sx={{
+                    mt: { xs: 4, sm: 5 },
+                    mx: "auto",
+                    height: "1px",
+                    width: 64,
+                    backgroundColor: "primary.main",
+                    opacity: 0.45,
+                  }}
+                />
+              </Box>
               <CategoryPicker
                 selected={state.selectedSubcategories}
                 difficulty={state.difficulty}
