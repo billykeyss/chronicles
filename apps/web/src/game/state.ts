@@ -48,6 +48,7 @@ export const initialState: GameState = {
   timeline: [],
   current: null,
   reverseRound: null,
+  reverseHistory: [],
   strikes: 0,
   hintsRemaining: HINTS_PER_GAME,
   hintUsedOnCurrent: null,
@@ -583,6 +584,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       });
       const strikes = correct ? state.strikes : state.strikes + 1;
       const status = strikes >= STRIKES_MAX ? "gameover" : "playing";
+      const settledRound: ReverseRound = {
+        ...round,
+        pickedIndex: action.choiceIndex,
+      };
 
       return {
         ...state,
@@ -593,7 +598,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         status,
         placements: state.placements + 1,
         correctPlacements: state.correctPlacements + (correct ? 1 : 0),
-        reverseRound: { ...round, pickedIndex: action.choiceIndex },
+        reverseRound: settledRound,
+        reverseHistory: [...state.reverseHistory, settledRound],
         hintReveal: null,
         lastResult: {
           correct,
@@ -658,6 +664,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ...initialState,
         selectedSubcategories: state.selectedSubcategories,
         difficulty: state.difficulty,
+        mode: state.mode,
+        endless: state.endless,
       };
     }
 

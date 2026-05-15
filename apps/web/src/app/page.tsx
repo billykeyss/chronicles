@@ -155,6 +155,18 @@ export default function HomePage() {
       // There IS a cached game — show the spinner long enough to read.
       setRestoringCache(true);
       dispatch({ type: "restore", state: persisted });
+      // If the player reloads mid-result (the round was answered but the
+      // auto-advance never fired because lastResult is transient), draw the
+      // next round so they aren't stranded on a settled board.
+      const stalledReverse =
+        persisted.mode === "reverse" &&
+        persisted.reverseRound !== null &&
+        persisted.reverseRound.pickedIndex !== null;
+      const stalledTimeline =
+        persisted.mode === "timeline" && persisted.current === null;
+      if (persisted.status === "playing" && (stalledReverse || stalledTimeline)) {
+        dispatch({ type: "next-card" });
+      }
       const t = setTimeout(() => {
         setRestoringCache(false);
         setHydrated(true);
@@ -179,6 +191,7 @@ export default function HomePage() {
   }, [state.status]);
   const [toastOpen, setToastOpen] = useState(false);
   const [reverseRevealOpen, setReverseRevealOpen] = useState(false);
+  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [shownResult, setShownResult] = useState<typeof state.lastResult>(null);
   const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(
     null,
@@ -240,10 +253,9 @@ export default function HomePage() {
     }
     recordSeenEventIds(seenIds);
     const closeT = setTimeout(() => setToastOpen(false), TOAST_VISIBLE_MS);
-    // On a reverse-mode miss, pause auto-advance and pop the reveal dialog so
-    // the player gets a clear look at the correct event before the next round.
-    const pauseForReveal =
-      state.mode === "reverse" && !state.lastResult.correct;
+    // In reverse mode, always pause auto-advance and pop the reveal dialog so
+    // the player gets a clear look at every event in the round before moving on.
+    const pauseForReveal = state.mode === "reverse";
     if (pauseForReveal) setReverseRevealOpen(true);
     const drawT =
       state.status === "playing" && !pauseForReveal
@@ -669,6 +681,7 @@ export default function HomePage() {
             state.reverseRound && (
               <ReversePanel
                 round={state.reverseRound}
+                history={state.reverseHistory}
                 thumbnails={thumbnails}
                 summaries={summaries}
                 hintReveal={state.hintReveal}
@@ -679,6 +692,7 @@ export default function HomePage() {
                 onVerify={(i) =>
                   dispatch({ type: "verify-reverse", choiceIndex: i })
                 }
+                onOpenHistory={(idx) => setHistoryIndex(idx)}
               />
             )}
 
@@ -989,21 +1003,59 @@ export default function HomePage() {
         onClose={() => setToastOpen(false)}
       />
 
-      <ReverseRevealDialog
-        open={reverseRevealOpen}
-        event={shownResult?.placedEvent ?? null}
-        thumbnail={
-          shownResult ? thumbnails[shownResult.placedEvent.id] : undefined
-        }
-        summary={
-          shownResult ? summaries[shownResult.placedEvent.id] : undefined
-        }
-        ctaLabel={state.status === "gameover" ? "Continue" : "Next round"}
-        onClose={() => {
-          setReverseRevealOpen(false);
-          if (state.status === "playing") dispatch({ type: "next-card" });
-        }}
-      />
+      {(() => {
+        const historyRound =
+          historyIndex !== null
+            ? (state.reverseHistory[historyIndex] ?? null)
+            : null;
+        const viewingHistory = historyRound !== null;
+        const dialogEvent = viewingHistory
+          ? (historyRound.choices[historyRound.correctIndex]?.event ?? null)
+          : (shownResult?.placedEvent ?? null);
+        const dialogCorrect = viewingHistory
+          ? historyRound.pickedIndex === historyRound.correctIndex
+          : (shownResult?.correct ?? false);
+        const sourceRound = viewingHistory ? historyRound : state.reverseRound;
+        const dialogOthers =
+          sourceRound && dialogEvent
+            ? sourceRound.choices
+                .filter((c) => c.event.id !== dialogEvent.id)
+                .map((c) => ({
+                  event: c.event,
+                  summary: summaries[c.event.id],
+                  picked:
+                    sourceRound.pickedIndex !== null &&
+                    sourceRound.choices[sourceRound.pickedIndex]?.event.id ===
+                      c.event.id,
+                }))
+            : undefined;
+        return (
+          <ReverseRevealDialog
+            open={reverseRevealOpen || viewingHistory}
+            event={dialogEvent}
+            correct={dialogCorrect}
+            thumbnail={dialogEvent ? thumbnails[dialogEvent.id] : undefined}
+            summary={dialogEvent ? summaries[dialogEvent.id] : undefined}
+            others={dialogOthers}
+            ctaLabel={
+              viewingHistory
+                ? "Close"
+                : state.status === "gameover"
+                  ? "Continue"
+                  : "Next round"
+            }
+            onClose={() => {
+              if (viewingHistory) {
+                setHistoryIndex(null);
+                return;
+              }
+              setReverseRevealOpen(false);
+              if (state.status === "playing")
+                dispatch({ type: "next-card" });
+            }}
+          />
+        );
+      })()}
 
       <GameOverDialog
         open={

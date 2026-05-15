@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
+import Collapse from "@mui/material/Collapse";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -9,17 +12,25 @@ import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { ExternalLink, X } from "lucide-react";
+import { ChevronDown, ExternalLink, X } from "lucide-react";
 import { CATEGORY_BY_ID } from "@/game/data";
 import { formatYear } from "./EventCard";
 import type { TimelineEvent } from "@/game/types";
 import { wikipediaPageUrl, type WikipediaSummary } from "@/wikipedia/api";
+
+type OtherChoice = {
+  event: TimelineEvent;
+  picked?: boolean;
+  summary?: WikipediaSummary;
+};
 
 type Props = {
   open: boolean;
   event: TimelineEvent | null;
   thumbnail?: string;
   summary?: WikipediaSummary;
+  others?: OtherChoice[];
+  correct?: boolean;
   onClose: () => void;
   ctaLabel?: string;
 };
@@ -29,6 +40,8 @@ export default function ReverseRevealDialog({
   event,
   thumbnail,
   summary,
+  others,
+  correct = false,
   onClose,
   ctaLabel = "Next round",
 }: Props) {
@@ -46,13 +59,13 @@ export default function ReverseRevealDialog({
             display: "block",
             fontFamily: "var(--font-mono), monospace",
             letterSpacing: "0.28em",
-            color: "error.main",
+            color: correct ? "success.main" : "error.main",
             textTransform: "uppercase",
             fontSize: 10,
             mb: 0.5,
           }}
         >
-          Misplaced · the answer was
+          {correct ? "Correct · the answer was" : "Misplaced · the answer was"}
         </Typography>
         <Typography
           sx={{
@@ -153,6 +166,36 @@ export default function ReverseRevealDialog({
               {blurb}
             </Typography>
           )}
+          {others && others.length > 0 && (
+            <Box
+              sx={{
+                mt: 0.5,
+                pt: 1.5,
+                borderTop: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  fontFamily: "var(--font-mono), monospace",
+                  letterSpacing: "0.28em",
+                  textTransform: "uppercase",
+                  color: "text.secondary",
+                  fontSize: 10,
+                  mb: 1,
+                }}
+              >
+                The others
+              </Typography>
+              <Stack spacing={0.5}>
+                {others.map((o) => (
+                  <OtherRow key={o.event.id} choice={o} />
+                ))}
+              </Stack>
+            </Box>
+          )}
         </Stack>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, justifyContent: "space-between" }}>
@@ -170,5 +213,112 @@ export default function ReverseRevealDialog({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function OtherRow({ choice }: { choice: OtherChoice }) {
+  const [open, setOpen] = useState(false);
+  const blurb = choice.summary?.extract ?? choice.event.related;
+  const hasBlurb = Boolean(blurb);
+
+  return (
+    <Box>
+      <ButtonBase
+        component="div"
+        onClick={() => hasBlurb && setOpen((v) => !v)}
+        disabled={!hasBlurb}
+        sx={{
+          width: "100%",
+          display: "flex",
+          alignItems: "baseline",
+          gap: 1.5,
+          py: 0.5,
+          px: 0.5,
+          borderRadius: 0.5,
+          textAlign: "left",
+          cursor: hasBlurb ? "pointer" : "default",
+          transition: "background-color .15s",
+          "&:hover": hasBlurb
+            ? { backgroundColor: "action.hover" }
+            : undefined,
+        }}
+        aria-expanded={hasBlurb ? open : undefined}
+        aria-label={
+          hasBlurb
+            ? `${open ? "Collapse" : "Expand"} ${choice.event.title}`
+            : undefined
+        }
+      >
+        <Typography
+          sx={{
+            fontFamily: "var(--font-numerals), serif",
+            fontSize: 18,
+            lineHeight: 1,
+            color: choice.picked ? "error.main" : "text.secondary",
+            minWidth: 64,
+            flexShrink: 0,
+          }}
+        >
+          {formatYear(choice.event.year)}
+        </Typography>
+        <Typography
+          sx={{
+            flex: 1,
+            fontSize: 14,
+            lineHeight: 1.35,
+            color: "text.primary",
+            fontStyle: choice.picked ? "italic" : "normal",
+          }}
+        >
+          {choice.event.title}
+          {choice.picked && (
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                ml: 1,
+                fontFamily: "var(--font-mono), monospace",
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: "error.main",
+                fontSize: 9,
+              }}
+            >
+              your pick
+            </Typography>
+          )}
+        </Typography>
+        {hasBlurb && (
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              color: "text.secondary",
+              transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform .2s",
+              flexShrink: 0,
+            }}
+          >
+            <ChevronDown size={14} strokeWidth={1.5} />
+          </Box>
+        )}
+      </ButtonBase>
+      {hasBlurb && (
+        <Collapse in={open} timeout="auto" unmountOnExit>
+          <Typography
+            sx={{
+              mt: 0.5,
+              ml: "calc(64px + 12px)",
+              mr: 0.5,
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: "text.secondary",
+            }}
+          >
+            {blurb}
+          </Typography>
+        </Collapse>
+      )}
+    </Box>
   );
 }

@@ -113,6 +113,12 @@ export type GameState = {
   current: TimelineEvent | null;
   /** Reverse-mode current round. Null in timeline mode. */
   reverseRound: ReverseRound | null;
+  /**
+   * Reverse-mode log of every settled round in this game (in chronological
+   * order). Lets the player revisit any past round and see its choices,
+   * pick, and outcome. Empty in timeline mode.
+   */
+  reverseHistory: ReverseRound[];
   strikes: number;
   hintsRemaining: number;
   hintUsedOnCurrent: HintType | null;

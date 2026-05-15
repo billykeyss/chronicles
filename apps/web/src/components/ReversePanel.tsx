@@ -1,6 +1,7 @@
 "use client";
 
 import Box from "@mui/material/Box";
+import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
@@ -13,12 +14,14 @@ import { wikipediaPageUrl, type WikipediaSummary } from "@/wikipedia/api";
 
 type Props = {
   round: ReverseRound;
+  history?: ReverseRound[];
   thumbnails?: Record<string, string | undefined>;
   summaries?: Record<string, WikipediaSummary | undefined>;
   hintReveal: HintReveal | null;
   onPick: (choiceIndex: number) => void;
   /** Called when the player taps a card while the `verify` hint is armed. */
   onVerify: (choiceIndex: number) => void;
+  onOpenHistory?: (historyIndex: number) => void;
 };
 
 const HINT_LABELS: Record<string, string> = {
@@ -29,11 +32,13 @@ const HINT_LABELS: Record<string, string> = {
 
 export default function ReversePanel({
   round,
+  history,
   thumbnails,
   summaries,
   hintReveal,
   onPick,
   onVerify,
+  onOpenHistory,
 }: Props) {
   const settled = round.pickedIndex !== null;
   const pickedCorrect =
@@ -349,6 +354,107 @@ export default function ReversePanel({
           {pickedCorrect ? "Correct" : "Misplaced"} · drawing next round…
         </Box>
       )}
+
+      {history && history.length > 0 && (
+        <HistoryStrip
+          history={history}
+          currentRound={round}
+          onOpen={onOpenHistory}
+        />
+      )}
+    </Box>
+  );
+}
+
+function HistoryStrip({
+  history,
+  currentRound,
+  onOpen,
+}: {
+  history: ReverseRound[];
+  currentRound: ReverseRound;
+  onOpen?: (index: number) => void;
+}) {
+  // Render in reverse chronological order (most recent first), skipping the
+  // round currently displayed above. Pair each entry with its original
+  // history index so the click callback resolves back to state.reverseHistory.
+  const entries = history
+    .map((r, i) => ({ round: r, index: i }))
+    .filter(({ round }) => round !== currentRound)
+    .reverse();
+  if (entries.length === 0) return null;
+
+  return (
+    <Box sx={{ mt: { xs: 3, sm: 4 } }}>
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          mb: 1,
+          fontFamily: "var(--font-mono), monospace",
+          letterSpacing: "0.32em",
+          textTransform: "uppercase",
+          fontSize: 10,
+          color: "text.secondary",
+          textAlign: "center",
+        }}
+      >
+        Past rounds
+      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          gap: 0.75,
+        }}
+      >
+        {entries.map(({ round: r, index }) => {
+          const correct = r.pickedIndex === r.correctIndex;
+          return (
+            <ButtonBase
+              key={index}
+              onClick={() => onOpen?.(index)}
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.625,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: 999,
+                border: 1,
+                borderColor: correct ? "success.main" : "error.main",
+                backgroundColor: "background.paper",
+                color: correct ? "success.main" : "error.main",
+                transition: "background-color .15s, transform .15s",
+                "&:hover": {
+                  backgroundColor: "action.hover",
+                  transform: "translateY(-1px)",
+                },
+              }}
+              aria-label={`Review round for ${formatYear(r.year)} — ${
+                correct ? "correct" : "missed"
+              }`}
+            >
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-numerals), serif",
+                  fontSize: 13,
+                  lineHeight: 1,
+                  color: "text.primary",
+                }}
+              >
+                {formatYear(r.year)}
+              </Typography>
+              {correct ? (
+                <Check size={11} strokeWidth={2.5} />
+              ) : (
+                <X size={11} strokeWidth={2.5} />
+              )}
+            </ButtonBase>
+          );
+        })}
+      </Box>
     </Box>
   );
 }
