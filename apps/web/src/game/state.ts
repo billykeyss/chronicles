@@ -271,7 +271,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         correct: true,
         hintUsed: null,
       };
-      const drawNext = drawCard(rest, [anchor.year], minGap);
+      const drawNext = drawCard(rest, [anchor.year], gap);
       const nextCard = drawNext.drawn ?? rest[0] ?? null;
       const remaining = drawNext.drawn ? drawNext.rest : rest.slice(1);
       return {

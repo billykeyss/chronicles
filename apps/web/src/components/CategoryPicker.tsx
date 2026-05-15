@@ -29,25 +29,32 @@ type Props = {
   onResume?: () => void;
 };
 
+type DifficultyCopy = { gap: string; description: string };
+
 const DIFFICULTIES: Array<{
   id: Difficulty;
   label: string;
-  gap: string;
-  description: string;
+  timeline: DifficultyCopy;
+  reverse: DifficultyCopy;
 }> = [
   {
     id: "easy",
     label: "Easy",
-    gap: "100 yrs",
-    description: "Forgiving spacing",
+    timeline: { gap: "≥ 100 yrs", description: "Forgiving spacing" },
+    reverse: { gap: "± 100 yrs", description: "Wide year range" },
   },
   {
     id: "medium",
     label: "Medium",
-    gap: "50 yrs",
-    description: "Default balance",
+    timeline: { gap: "≥ 50 yrs", description: "Default balance" },
+    reverse: { gap: "± 50 yrs", description: "Within a generation" },
   },
-  { id: "hard", label: "Hard", gap: "10 yrs", description: "Tight order" },
+  {
+    id: "hard",
+    label: "Hard",
+    timeline: { gap: "≥ 10 yrs", description: "Tight order" },
+    reverse: { gap: "± 10 yrs", description: "Same decade" },
+  },
 ];
 
 const MODES: Array<{
@@ -217,6 +224,7 @@ export default function CategoryPicker({
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
         {DIFFICULTIES.map((d) => {
           const active = d.id === difficulty;
+          const copy = mode === "reverse" ? d.reverse : d.timeline;
           return (
             <Box
               key={d.id}
@@ -271,14 +279,14 @@ export default function CategoryPicker({
                     fontSize: 10,
                   }}
                 >
-                  ≥ {d.gap}
+                  {copy.gap}
                 </Typography>
               </Stack>
               <Typography
                 variant="caption"
                 sx={{ display: "block", color: "text.secondary", mt: 0.25 }}
               >
-                {d.description}
+                {copy.description}
               </Typography>
             </Box>
           );
