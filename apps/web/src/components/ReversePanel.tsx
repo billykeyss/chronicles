@@ -5,7 +5,7 @@ import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { Check, ExternalLink, Lightbulb, X } from "lucide-react";
+import { Check, ExternalLink, Lightbulb, Search, X } from "lucide-react";
 import { CATEGORY_BY_ID } from "@/game/data";
 import { formatYear } from "./EventCard";
 import type { HintReveal, ReverseRound } from "@/game/types";
@@ -16,8 +16,15 @@ type Props = {
   thumbnails?: Record<string, string | undefined>;
   summaries?: Record<string, WikipediaSummary | undefined>;
   hintReveal: HintReveal | null;
-  highlightCorrect?: boolean;
   onPick: (choiceIndex: number) => void;
+  /** Called when the player taps a card while the `verify` hint is armed. */
+  onVerify: (choiceIndex: number) => void;
+};
+
+const HINT_LABELS: Record<string, string> = {
+  related: "Related",
+  eliminate: "Eliminated",
+  verify: "Verify",
 };
 
 export default function ReversePanel({
@@ -25,12 +32,14 @@ export default function ReversePanel({
   thumbnails,
   summaries,
   hintReveal,
-  highlightCorrect,
   onPick,
+  onVerify,
 }: Props) {
   const settled = round.pickedIndex !== null;
   const pickedCorrect =
     settled && round.pickedIndex === round.correctIndex;
+  const verifyArmed = round.verifyArmed && !settled;
+  const confirmedIndex = round.verifiedIndex;
 
   return (
     <Box>
@@ -90,7 +99,11 @@ export default function ReversePanel({
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5 }}>
-            <Lightbulb size={11} strokeWidth={1.5} color="var(--mui-palette-primary-main)" />
+            {hintReveal.type === "verify" ? (
+              <Search size={11} strokeWidth={1.5} color="var(--mui-palette-primary-main)" />
+            ) : (
+              <Lightbulb size={11} strokeWidth={1.5} color="var(--mui-palette-primary-main)" />
+            )}
             <Typography
               variant="caption"
               sx={{
@@ -101,7 +114,7 @@ export default function ReversePanel({
                 fontSize: 10,
               }}
             >
-              {hintReveal.type === "decade" ? "Eliminate" : `Oracle · ${hintReveal.type}`}
+              Oracle · {HINT_LABELS[hintReveal.type] ?? hintReveal.type}
             </Typography>
           </Box>
           <Typography sx={{ fontSize: 14, lineHeight: 1.45 }}>
@@ -127,7 +140,7 @@ export default function ReversePanel({
           const showCorrect = settled && isCorrect;
           const showWrong = settled && isPicked && !isCorrect;
           const eliminated = choice.eliminated;
-          const highlightAsAnswer = highlightCorrect && isCorrect && !settled;
+          const isConfirmed = !settled && confirmedIndex === i;
 
           const summary = summaries?.[choice.event.id];
           const thumb = thumbnails?.[choice.event.id];
@@ -140,9 +153,11 @@ export default function ReversePanel({
             ? "success.main"
             : showWrong
               ? "error.main"
-              : highlightAsAnswer
-                ? "primary.main"
-                : "divider";
+              : isConfirmed
+                ? "success.main"
+                : verifyArmed && !eliminated
+                  ? "primary.main"
+                  : "divider";
 
           return (
             <Paper
@@ -150,6 +165,10 @@ export default function ReversePanel({
               elevation={0}
               onClick={() => {
                 if (settled || eliminated) return;
+                if (verifyArmed) {
+                  onVerify(i);
+                  return;
+                }
                 onPick(i);
               }}
               sx={{
@@ -162,16 +181,22 @@ export default function ReversePanel({
                 cursor: settled || eliminated ? "default" : "pointer",
                 opacity: eliminated ? 0.35 : 1,
                 transition: "border-color .15s, transform .15s, box-shadow .2s",
-                ...(highlightAsAnswer && {
+                ...(isConfirmed && {
                   boxShadow:
-                    "0 0 0 2px var(--mui-palette-primary-main), 0 12px 24px rgba(0,0,0,.25)",
+                    "0 0 0 2px var(--mui-palette-success-main), 0 12px 24px rgba(0,0,0,.25)",
+                }),
+                ...(verifyArmed && !eliminated && !isConfirmed && {
+                  boxShadow:
+                    "0 0 0 1px var(--mui-palette-primary-main), 0 8px 18px rgba(0,0,0,.2)",
                 }),
                 "&:hover":
                   !settled && !eliminated
                     ? {
                         transform: "translateY(-2px)",
                         boxShadow: "0 10px 24px rgba(0,0,0,.22)",
-                        borderColor: "primary.main",
+                        borderColor: verifyArmed
+                          ? "primary.main"
+                          : "primary.main",
                       }
                     : undefined,
               }}
@@ -205,10 +230,9 @@ export default function ReversePanel({
                     <cat.Icon size={40} strokeWidth={1.25} />
                   </Box>
                 )}
-                {showCorrect && (
-                  <StatusBadge kind="correct" />
-                )}
+                {showCorrect && <StatusBadge kind="correct" />}
                 {showWrong && <StatusBadge kind="wrong" />}
+                {!settled && isConfirmed && <StatusBadge kind="confirmed" />}
               </Box>
               <Box sx={{ p: 1.5 }}>
                 <Typography
@@ -329,8 +353,9 @@ export default function ReversePanel({
   );
 }
 
-function StatusBadge({ kind }: { kind: "correct" | "wrong" }) {
-  const color = kind === "correct" ? "success.main" : "error.main";
+function StatusBadge({ kind }: { kind: "correct" | "wrong" | "confirmed" }) {
+  const color =
+    kind === "correct" || kind === "confirmed" ? "success.main" : "error.main";
   return (
     <Box
       sx={{
@@ -348,11 +373,16 @@ function StatusBadge({ kind }: { kind: "correct" | "wrong" }) {
         alignItems: "center",
         justifyContent: "center",
       }}
+      aria-label={
+        kind === "confirmed" ? "Verified by the Oracle" : undefined
+      }
     >
-      {kind === "correct" ? (
-        <Check size={14} strokeWidth={3} />
-      ) : (
+      {kind === "wrong" ? (
         <X size={14} strokeWidth={3} />
+      ) : kind === "confirmed" ? (
+        <Search size={13} strokeWidth={2.5} />
+      ) : (
+        <Check size={14} strokeWidth={3} />
       )}
     </Box>
   );

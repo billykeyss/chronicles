@@ -38,12 +38,24 @@ export type TimelineEvent = {
   wikipediaTitle?: string;
 };
 
-export type HintType = "related" | "decade" | "answer";
+/**
+ * Hint catalogue. Timeline mode and Reverse mode draw from disjoint subsets:
+ *   timeline: related | eliminate | anchor | compare
+ *   reverse:  related | verify
+ */
+export type HintType =
+  | "related"
+  | "eliminate"
+  | "anchor"
+  | "compare"
+  | "verify";
 
 export type HintReveal = {
   type: HintType;
   content: string;
   correctSlotIndices: number[];
+  /** Timeline `eliminate`: which slot the oracle ruled out. */
+  eliminatedSlotIndex?: number;
 };
 
 export type PlacedEvent = TimelineEvent & {
@@ -78,6 +90,14 @@ export type ReverseRound = {
   correctIndex: number;
   /** Index of the player's pick, or null while undecided. */
   pickedIndex: number | null;
+  /**
+   * True after `use-hint verify` is dispatched and before the player taps a card.
+   * While true, taps route to `verify-reverse`; once consumed (either confirmed
+   * or eliminated), this flips back to false and taps resume picking.
+   */
+  verifyArmed: boolean;
+  /** Set to the choice index when verify confirms a correct card. */
+  verifiedIndex: number | null;
 };
 
 export type GameState = {

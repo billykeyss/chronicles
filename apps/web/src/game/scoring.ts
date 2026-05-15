@@ -2,17 +2,21 @@ import type { HintType } from "./types";
 
 /**
  * Scoring rules:
- *   correct, no hint  → 100 base + min(streak*10, 50) streak bonus
- *   correct, related  → 75   (no streak bonus, streak preserved)
- *   correct, decade   → 50   (no streak bonus, streak preserved)
- *   correct, answer   → 25   (no streak bonus, streak preserved)
- *   wrong             → 0    (streak resets, strike added)
+ *   correct, no hint   → 100 base + min(streak*10, 50) streak bonus
+ *   correct, related   → 75   (no streak bonus, streak preserved)
+ *   correct, eliminate → 60   (timeline: ruled-out slot; reverse: distractor removed)
+ *   correct, anchor    → 45   (timeline only)
+ *   correct, compare   → 30   (timeline only)
+ *   correct, verify    → 50   (reverse only; same value whether hint confirmed or eliminated)
+ *   wrong              → 0    (streak resets, strike added)
  */
 
 const HINT_BASE: Record<HintType, number> = {
   related: 75,
-  decade: 50,
-  answer: 25,
+  eliminate: 60,
+  anchor: 45,
+  compare: 30,
+  verify: 50,
 };
 
 const BASE_CORRECT = 100;

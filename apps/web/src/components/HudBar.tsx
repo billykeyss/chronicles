@@ -155,14 +155,14 @@ export default function HudBar({
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           {onUseHint && (
             <Tooltip
-              title={canHint ? "Consult the oracle" : "The oracle is silent"}
+              title={canHint ? "Consult the Oracle" : "The Oracle is silent"}
               placement="bottom"
             >
               <Box component="span" sx={{ display: "inline-flex" }}>
                 <ButtonBase
                   onClick={onUseHint}
                   disabled={!canHint}
-                  aria-label="Consult the oracle"
+                  aria-label="Consult the Oracle"
                   sx={{ ...iconButtonSx, opacity: canHint ? 1 : 0.35 }}
                 >
                   <Lightbulb size={15} strokeWidth={1.5} />

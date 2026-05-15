@@ -9,7 +9,7 @@ import Popover from "@mui/material/Popover";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, X as XIcon } from "lucide-react";
 import { CATEGORY_BY_ID } from "@/game/data";
 import type { PlacedEvent } from "@/game/types";
 import { wikipediaPageUrl, type WikipediaSummary } from "@/wikipedia/api";
@@ -54,6 +54,8 @@ type Props = {
   dragging?: boolean;
   layout?: TimelineLayout;
   orientation?: RailOrientation;
+  /** Slot the `eliminate` hint has ruled out — rendered with an X. */
+  eliminatedSlotIndex?: number | null;
 };
 
 function Slot({
@@ -61,11 +63,13 @@ function Slot({
   dragging,
   active,
   shifted,
+  eliminated,
 }: {
   index: number;
   dragging?: boolean;
   active: boolean;
   shifted: boolean;
+  eliminated?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `rail-slot-${index}`,
@@ -94,12 +98,17 @@ function Slot({
         sx={{
           height: "55%",
           width: highlight ? "2px" : "1.5px",
-          backgroundColor: highlight ? "primary.main" : "divider",
+          backgroundColor: highlight
+            ? "primary.main"
+            : eliminated
+              ? "error.main"
+              : "divider",
           borderRadius: "1px",
-          opacity: highlight ? 1 : dragging ? 0.5 : 0,
+          opacity: highlight ? 1 : eliminated ? 0.6 : dragging ? 0.5 : 0,
           transition: "opacity .2s, background-color .15s, width .15s",
         }}
       />
+      {eliminated && !highlight && <EliminatedBadge axisFromTop={AXIS_FROM_TOP} />}
       {highlight && (
         <Box
           sx={{
@@ -126,6 +135,33 @@ function Slot({
           +
         </Box>
       )}
+    </Box>
+  );
+}
+
+function EliminatedBadge({ axisFromTop }: { axisFromTop: number }) {
+  return (
+    <Box
+      sx={{
+        position: "absolute",
+        top: axisFromTop - 14,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 28,
+        height: 28,
+        borderRadius: "50%",
+        border: 1.5,
+        borderColor: "error.main",
+        backgroundColor: "rgba(176, 50, 50, 0.12)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "error.main",
+        pointerEvents: "none",
+      }}
+      aria-label="Ruled out by the Oracle"
+    >
+      <XIcon size={14} strokeWidth={2} />
     </Box>
   );
 }
@@ -515,6 +551,7 @@ function ScaleSlot({
   width,
   dragging,
   active,
+  eliminated,
 }: {
   index: number;
   /** Left offset as a CSS length (e.g. "12%" or `${px}px`). */
@@ -523,6 +560,7 @@ function ScaleSlot({
   width: string;
   dragging?: boolean;
   active: boolean;
+  eliminated?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `rail-slot-${index}`,
@@ -548,12 +586,17 @@ function ScaleSlot({
         sx={{
           height: "55%",
           width: highlight ? "2px" : "1.5px",
-          backgroundColor: highlight ? "primary.main" : "divider",
+          backgroundColor: highlight
+            ? "primary.main"
+            : eliminated
+              ? "error.main"
+              : "divider",
           borderRadius: "1px",
-          opacity: highlight ? 1 : dragging ? 0.35 : 0,
+          opacity: highlight ? 1 : eliminated ? 0.6 : dragging ? 0.35 : 0,
           transition: "opacity .2s, background-color .15s, width .15s",
         }}
       />
+      {eliminated && !highlight && <EliminatedBadge axisFromTop={AXIS_FROM_TOP} />}
       {highlight && (
         <Box
           sx={{
@@ -590,6 +633,7 @@ function ScaleRail({
   summaries,
   insertIdx,
   dragging,
+  eliminatedSlotIndex,
 }: Required<Pick<Props, "timeline">> & Props) {
   const minYear = Math.min(...timeline.map((e) => e.year));
   const maxYear = Math.max(...timeline.map((e) => e.year));
@@ -719,6 +763,7 @@ function ScaleRail({
             width={`${slot.widthPct}%`}
             dragging={dragging}
             active={insertIdx === slot.index}
+            eliminated={eliminatedSlotIndex === slot.index}
           />
         ))}
 
@@ -759,6 +804,7 @@ function EvenRail({
   summaries,
   insertIdx,
   dragging,
+  eliminatedSlotIndex,
 }: Props) {
   return (
     <Box
@@ -808,6 +854,7 @@ function EvenRail({
           dragging={dragging}
           active={insertIdx === 0}
           shifted={false}
+          eliminated={eliminatedSlotIndex === 0}
         />
         {timeline.map((event, i) => {
           const placementShifted =
@@ -831,6 +878,7 @@ function EvenRail({
                 dragging={dragging}
                 active={insertIdx === trailingSlotIndex}
                 shifted={trailingSlotShifted}
+                eliminated={eliminatedSlotIndex === trailingSlotIndex}
               />
             </React.Fragment>
           );
@@ -855,12 +903,14 @@ function ScaleSlotVertical({
   height,
   dragging,
   active,
+  eliminated,
 }: {
   index: number;
   top: string;
   height: string;
   dragging?: boolean;
   active: boolean;
+  eliminated?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `rail-slot-${index}`,
@@ -886,12 +936,40 @@ function ScaleSlotVertical({
         sx={{
           width: "44%",
           height: highlight ? "2px" : "1.5px",
-          backgroundColor: highlight ? "primary.main" : "divider",
+          backgroundColor: highlight
+            ? "primary.main"
+            : eliminated
+              ? "error.main"
+              : "divider",
           borderRadius: "1px",
-          opacity: highlight ? 1 : dragging ? 0.35 : 0,
+          opacity: highlight ? 1 : eliminated ? 0.6 : dragging ? 0.35 : 0,
           transition: "opacity .2s, background-color .15s, height .15s",
         }}
       />
+      {eliminated && !highlight && (
+        <Box
+          sx={{
+            position: "absolute",
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 26,
+            height: 26,
+            borderRadius: "50%",
+            border: 1.5,
+            borderColor: "error.main",
+            backgroundColor: "rgba(176, 50, 50, 0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "error.main",
+            pointerEvents: "none",
+          }}
+          aria-label="Ruled out by the Oracle"
+        >
+          <XIcon size={12} strokeWidth={2} />
+        </Box>
+      )}
       {highlight && (
         <Box
           sx={{
@@ -1230,6 +1308,7 @@ function ScaleRailVertical({
   summaries,
   insertIdx,
   dragging,
+  eliminatedSlotIndex,
 }: Required<Pick<Props, "timeline">> & Props) {
   const minYear = Math.min(...timeline.map((e) => e.year));
   const maxYear = Math.max(...timeline.map((e) => e.year));
@@ -1347,6 +1426,7 @@ function ScaleRailVertical({
           height={`${slot.heightPct}%`}
           dragging={dragging}
           active={insertIdx === slot.index}
+          eliminated={eliminatedSlotIndex === slot.index}
         />
       ))}
 

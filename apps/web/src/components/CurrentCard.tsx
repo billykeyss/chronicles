@@ -13,6 +13,14 @@ import { GripVertical, Lightbulb, ZoomIn } from "lucide-react";
 import { CATEGORY_BY_ID } from "@/game/data";
 import type { HintReveal, HintType, TimelineEvent } from "@/game/types";
 
+const HINT_LABELS: Record<HintType, string> = {
+  related: "Related",
+  eliminate: "Eliminated",
+  anchor: "History",
+  compare: "Compare",
+  verify: "Verify",
+};
+
 const PANEL_HEIGHT = 76;
 
 /**
@@ -84,7 +92,7 @@ export function NowDrawingPanel({
                 fontSize: 9,
               }}
             >
-              Oracle · {hintReveal.type}
+              Oracle · {HINT_LABELS[hintReveal.type] ?? hintReveal.type}
             </Typography>
           </Box>
           <Typography sx={{ fontSize: 13, lineHeight: 1.4 }}>
@@ -98,7 +106,7 @@ export function NowDrawingPanel({
       >
         {onOpenHint && (
           <Tooltip
-            title={canHint ? "Consult the oracle" : "The oracle is silent"}
+            title={canHint ? "Consult the Oracle" : "The Oracle is silent"}
             placement="left"
           >
             <Box
@@ -118,7 +126,7 @@ export function NowDrawingPanel({
                   if (canHint) onOpenHint();
                 }}
                 disabled={!canHint}
-                aria-label="Consult the oracle"
+                aria-label="Consult the Oracle"
                 sx={{
                   width: 30,
                   height: 30,

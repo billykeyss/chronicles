@@ -8,51 +8,78 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import type { HintType } from "@/game/types";
+import type { GameMode, HintType } from "@/game/types";
 import { SCORING_RULES } from "@/game/scoring";
 
 type Props = {
   open: boolean;
+  mode: GameMode;
   onClose: () => void;
   onChoose: (hintType: HintType) => void;
 };
 
-const OPTIONS: Array<{
-  type: HintType;
-  title: string;
-  description: string;
-}> = [
+type HintOption = { type: HintType; title: string; description: string };
+
+const TIMELINE_OPTIONS: HintOption[] = [
   {
     type: "related",
     title: "Related fact",
     description: "A person, place, or detail from the page — year hidden.",
   },
   {
-    type: "decade",
-    title: "Reveal the decade",
-    description: "Narrow the year to a ten-year window.",
+    type: "eliminate",
+    title: "Rule out a slot",
+    description: "The Oracle marks one wrong slot with an X.",
   },
   {
-    type: "answer",
-    title: "Give me the answer",
-    description: "The year, plus a highlight of the correct slot.",
+    type: "anchor",
+    title: "Compare to history",
+    description:
+      "Tells you whether it's older or newer than a famous moment.",
+  },
+  {
+    type: "compare",
+    title: "Compare to the timeline",
+    description:
+      "Tells you whether it's older or newer than a card you've placed.",
+  },
+];
+
+const REVERSE_OPTIONS: HintOption[] = [
+  {
+    type: "related",
+    title: "Related fact",
+    description: "A clue about the event that matches the year.",
+  },
+  {
+    type: "eliminate",
+    title: "Rule out a card",
+    description: "The Oracle eliminates one of the wrong cards.",
+  },
+  {
+    type: "verify",
+    title: "Verify a card",
+    description:
+      "Tap a card; the Oracle answers yes or no. Confirms it, or eliminates it.",
   },
 ];
 
 export default function HintModal({
   open,
+  mode,
   onClose,
   onChoose,
 }: Props) {
+  const options = mode === "reverse" ? REVERSE_OPTIONS : TIMELINE_OPTIONS;
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Consult the oracle</DialogTitle>
+      <DialogTitle>Consult the Oracle</DialogTitle>
       <DialogContent>
         <Typography color="text.secondary" sx={{ fontSize: 14, mb: 2 }}>
           Once per card. Clearer visions cost more points.
         </Typography>
         <Stack spacing={1}>
-          {OPTIONS.map((opt) => (
+          {options.map((opt) => (
             <Box
               key={opt.type}
               role="button"

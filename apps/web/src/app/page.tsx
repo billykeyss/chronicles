@@ -34,6 +34,7 @@ import HudBar from "@/components/HudBar";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ResultToast from "@/components/ResultToast";
 import ReversePanel from "@/components/ReversePanel";
+import ReverseRevealDialog from "@/components/ReverseRevealDialog";
 import Timeline from "@/components/Timeline";
 import TimelineRail, {
   RailOrientation,
@@ -177,6 +178,7 @@ export default function HomePage() {
     if (state.status !== "gameover") setGameOverDismissed(false);
   }, [state.status]);
   const [toastOpen, setToastOpen] = useState(false);
+  const [reverseRevealOpen, setReverseRevealOpen] = useState(false);
   const [shownResult, setShownResult] = useState<typeof state.lastResult>(null);
   const [currentSummary, setCurrentSummary] = useState<WikipediaSummary | null>(
     null,
@@ -238,15 +240,20 @@ export default function HomePage() {
     }
     recordSeenEventIds(seenIds);
     const closeT = setTimeout(() => setToastOpen(false), TOAST_VISIBLE_MS);
+    // On a reverse-mode miss, pause auto-advance and pop the reveal dialog so
+    // the player gets a clear look at the correct event before the next round.
+    const pauseForReveal =
+      state.mode === "reverse" && !state.lastResult.correct;
+    if (pauseForReveal) setReverseRevealOpen(true);
     const drawT =
-      state.status === "playing"
+      state.status === "playing" && !pauseForReveal
         ? setTimeout(() => dispatch({ type: "next-card" }), NEXT_CARD_DELAY_MS)
         : null;
     return () => {
       clearTimeout(closeT);
       if (drawT) clearTimeout(drawT);
     };
-  }, [state.lastResult, state.status, state.reverseRound]);
+  }, [state.lastResult, state.status, state.reverseRound, state.mode]);
 
   useEffect(() => {
     setCurrentSummary(null);
@@ -665,11 +672,13 @@ export default function HomePage() {
                 thumbnails={thumbnails}
                 summaries={summaries}
                 hintReveal={state.hintReveal}
-                highlightCorrect={state.hintReveal?.type === "answer"}
                 onPick={(i) => {
                   if (state.lastResult) return;
                   dispatch({ type: "pick-reverse", choiceIndex: i });
                 }}
+                onVerify={(i) =>
+                  dispatch({ type: "verify-reverse", choiceIndex: i })
+                }
               />
             )}
 
@@ -781,6 +790,11 @@ export default function HomePage() {
                     insertIdx={insertIdx}
                     dragging={activeId !== null}
                     layout={railLayout}
+                    eliminatedSlotIndex={
+                      state.hintReveal?.type === "eliminate"
+                        ? state.hintReveal.eliminatedSlotIndex ?? null
+                        : null
+                    }
                   />
                 </Stack>
 
@@ -932,6 +946,11 @@ export default function HomePage() {
                       dragging={activeId !== null}
                       layout={railLayout}
                       orientation={RailOrientation.Vertical}
+                      eliminatedSlotIndex={
+                        state.hintReveal?.type === "eliminate"
+                          ? state.hintReveal.eliminatedSlotIndex ?? null
+                          : null
+                      }
                     />
                   ) : (
                     <Timeline
@@ -959,6 +978,7 @@ export default function HomePage() {
 
       <HintModal
         open={hintOpen}
+        mode={state.mode}
         onClose={() => setHintOpen(false)}
         onChoose={handleChooseHint}
       />
@@ -969,9 +989,28 @@ export default function HomePage() {
         onClose={() => setToastOpen(false)}
       />
 
+      <ReverseRevealDialog
+        open={reverseRevealOpen}
+        event={shownResult?.placedEvent ?? null}
+        thumbnail={
+          shownResult ? thumbnails[shownResult.placedEvent.id] : undefined
+        }
+        summary={
+          shownResult ? summaries[shownResult.placedEvent.id] : undefined
+        }
+        ctaLabel={state.status === "gameover" ? "Continue" : "Next round"}
+        onClose={() => {
+          setReverseRevealOpen(false);
+          if (state.status === "playing") dispatch({ type: "next-card" });
+        }}
+      />
+
       <GameOverDialog
         open={
-          state.status === "gameover" && !menuOpen && !gameOverDismissed
+          state.status === "gameover" &&
+          !menuOpen &&
+          !gameOverDismissed &&
+          !reverseRevealOpen
         }
         score={state.score}
         correctPlacements={state.correctPlacements}

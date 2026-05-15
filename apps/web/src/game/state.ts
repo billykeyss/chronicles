@@ -1,3 +1,4 @@
+import { pickClosestAnchor } from "./anchors";
 import {
   ALL_SUBCATEGORY_IDS,
   CATEGORIES,
@@ -33,6 +34,7 @@ export type GameAction =
   | { type: "place"; slotIndex: number }
   | { type: "next-card" }
   | { type: "pick-reverse"; choiceIndex: number }
+  | { type: "verify-reverse"; choiceIndex: number }
   | { type: "use-hint"; hintType: HintType; relatedSentence?: string }
   | { type: "restart" };
 
@@ -159,6 +161,8 @@ function buildReverseRound(
     choices: allChoices.map((event) => ({ event, eliminated: false })),
     correctIndex,
     pickedIndex: null,
+    verifyArmed: false,
+    verifiedIndex: null,
   };
 
   // Remove all three used events from the pool
@@ -167,34 +171,83 @@ function buildReverseRound(
   return { round, remaining };
 }
 
-function buildHintReveal(
+function buildTimelineHintReveal(
   hintType: HintType,
   event: TimelineEvent,
+  timeline: PlacedEvent[],
   correctSlotIndices: number[],
   relatedSentence?: string,
-): HintReveal {
-  if (hintType === "decade") {
-    const decadeStart = Math.floor(event.year / 10) * 10;
-    const decadeLabel =
-      decadeStart >= 0 ? `${decadeStart}s` : `${Math.abs(decadeStart)}s BC`;
+): HintReveal | null {
+  if (hintType === "related") {
     return {
-      type: hintType,
-      content: `This is from the ${decadeLabel}.`,
+      type: "related",
+      content: relatedSentence ?? event.related,
       correctSlotIndices,
     };
   }
-  if (hintType === "answer") {
+
+  if (hintType === "anchor") {
+    const a = pickClosestAnchor(event.year);
+    if (!a) return null;
+    const direction = event.year >= a.year ? "after" : "before";
     return {
-      type: hintType,
-      content: `This event is from ${formatYear(event.year)}. The highlighted slot is correct.`,
+      type: "anchor",
+      content: `Happened ${direction} ${a.name} (${formatYear(a.year)}).`,
       correctSlotIndices,
     };
   }
-  return {
-    type: hintType,
-    content: relatedSentence ?? event.related,
-    correctSlotIndices,
-  };
+
+  if (hintType === "compare") {
+    if (timeline.length === 0) return null;
+    // Median placed card by year — gives ~50% search reduction on average.
+    const sorted = [...timeline].sort((a, b) => a.year - b.year);
+    let pivot = sorted[Math.floor(sorted.length / 2)];
+    if (pivot.year === event.year) {
+      // Ties don't narrow the answer — fall back to a neighbour if available.
+      const idx = sorted.indexOf(pivot);
+      const alt = sorted[idx + 1] ?? sorted[idx - 1];
+      if (!alt || alt.year === event.year) return null;
+      pivot = alt;
+    }
+    const direction = event.year > pivot.year ? "newer" : "older";
+    return {
+      type: "compare",
+      content: `It's ${direction} than "${pivot.title}".`,
+      correctSlotIndices,
+    };
+  }
+
+  if (hintType === "eliminate") {
+    const totalSlots = timeline.length + 1;
+    const correctSet = new Set(correctSlotIndices);
+    const wrongs: number[] = [];
+    for (let i = 0; i < totalSlots; i++) {
+      if (!correctSet.has(i)) wrongs.push(i);
+    }
+    if (wrongs.length === 0) return null;
+    const eliminated = wrongs[Math.floor(Math.random() * wrongs.length)];
+    // Describe the ruled-out slot in plain language so the hint reads on
+    // every layout (the desktop rail also paints an X badge).
+    let description: string;
+    if (eliminated === 0) {
+      description = `It's not before "${timeline[0].title}" (${formatYear(timeline[0].year)}).`;
+    } else if (eliminated === timeline.length) {
+      const last = timeline[timeline.length - 1];
+      description = `It's not after "${last.title}" (${formatYear(last.year)}).`;
+    } else {
+      const before = timeline[eliminated - 1];
+      const after = timeline[eliminated];
+      description = `It's not between "${before.title}" (${formatYear(before.year)}) and "${after.title}" (${formatYear(after.year)}).`;
+    }
+    return {
+      type: "eliminate",
+      content: description,
+      correctSlotIndices,
+      eliminatedSlotIndex: eliminated,
+    };
+  }
+
+  return null;
 }
 
 function subcategoriesIn(category: CategoryId): string[] {
@@ -299,8 +352,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         const round = state.reverseRound;
         const correctEvent = round.choices[round.correctIndex].event;
 
-        // In reverse mode, the "decade" hint is repurposed as "eliminate a wrong choice".
-        if (action.hintType === "decade") {
+        if (action.hintType === "related") {
+          return {
+            ...state,
+            hintUsedOnCurrent: "related",
+            hintReveal: {
+              type: "related",
+              content: action.relatedSentence ?? correctEvent.related,
+              correctSlotIndices: [round.correctIndex],
+            },
+          };
+        }
+
+        // Passive elimination — oracle picks a random wrong card to remove.
+        if (action.hintType === "eliminate") {
           const candidates = round.choices
             .map((c, i) => ({ c, i }))
             .filter(({ c, i }) => i !== round.correctIndex && !c.eliminated);
@@ -312,27 +377,34 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           );
           return {
             ...state,
-            hintUsedOnCurrent: action.hintType,
+            hintUsedOnCurrent: "eliminate",
             reverseRound: { ...round, choices: newChoices },
             hintReveal: {
-              type: action.hintType,
+              type: "eliminate",
               content: `Eliminated "${toElim.c.event.title}".`,
               correctSlotIndices: [round.correctIndex],
             },
           };
         }
 
-        const reveal = buildHintReveal(
-          action.hintType,
-          correctEvent,
-          [round.correctIndex],
-          action.relatedSentence,
-        );
-        return {
-          ...state,
-          hintUsedOnCurrent: action.hintType,
-          hintReveal: reveal,
-        };
+        // `verify` arms the round — the player's next card tap is consumed
+        // by the oracle (yes/no) rather than being a final pick. The result
+        // is materialised by the separate `verify-reverse` action below.
+        if (action.hintType === "verify") {
+          return {
+            ...state,
+            hintUsedOnCurrent: "verify",
+            reverseRound: { ...round, verifyArmed: true },
+            hintReveal: {
+              type: "verify",
+              content: "Tap a card to verify with the Oracle.",
+              correctSlotIndices: [round.correctIndex],
+            },
+          };
+        }
+
+        // Hints that don't apply to reverse mode are no-ops.
+        return state;
       }
 
       // Timeline mode
@@ -341,16 +413,59 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         state.timeline,
         state.current.year,
       );
-      const reveal = buildHintReveal(
+      const reveal = buildTimelineHintReveal(
         action.hintType,
         state.current,
+        state.timeline,
         correctSlotIndices,
         action.relatedSentence,
       );
+      if (!reveal) return state;
       return {
         ...state,
         hintUsedOnCurrent: action.hintType,
         hintReveal: reveal,
+      };
+    }
+
+    case "verify-reverse": {
+      if (state.status !== "playing" || !state.reverseRound) return state;
+      const round = state.reverseRound;
+      if (!round.verifyArmed) return state;
+      if (round.pickedIndex !== null) return state;
+      const target = round.choices[action.choiceIndex];
+      if (!target || target.eliminated) return state;
+      const correct = action.choiceIndex === round.correctIndex;
+      if (correct) {
+        return {
+          ...state,
+          reverseRound: {
+            ...round,
+            verifyArmed: false,
+            verifiedIndex: action.choiceIndex,
+          },
+          hintReveal: {
+            type: "verify",
+            content: "Confirmed — the Oracle says yes.",
+            correctSlotIndices: [round.correctIndex],
+          },
+        };
+      }
+      const newChoices = round.choices.map((c, i) =>
+        i === action.choiceIndex ? { ...c, eliminated: true } : c,
+      );
+      return {
+        ...state,
+        reverseRound: {
+          ...round,
+          choices: newChoices,
+          verifyArmed: false,
+        },
+        hintReveal: {
+          type: "verify",
+          content: `Not this one — "${target.event.title}" is eliminated.`,
+          correctSlotIndices: [round.correctIndex],
+        },
       };
     }
 
