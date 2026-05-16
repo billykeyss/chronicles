@@ -17,6 +17,7 @@ import {
   type GameState,
   type HintReveal,
   type HintType,
+  type HigherLowerRound,
   type PlacedEvent,
   type ReverseRound,
   type TimelineEvent,
@@ -35,6 +36,7 @@ export type GameAction =
   | { type: "next-card" }
   | { type: "pick-reverse"; choiceIndex: number }
   | { type: "verify-reverse"; choiceIndex: number }
+  | { type: "pick-higher-lower"; direction: "earlier" | "later" }
   | { type: "use-hint"; hintType: HintType; relatedSentence?: string }
   | { type: "restart" };
 
@@ -49,6 +51,7 @@ export const initialState: GameState = {
   current: null,
   reverseRound: null,
   reverseHistory: [],
+  higherLowerRound: null,
   strikes: 0,
   hintsRemaining: HINTS_PER_GAME,
   hintUsedOnCurrent: null,
@@ -92,6 +95,31 @@ function drawCard(
   const drawn = pool[idx];
   const rest = [...pool.slice(0, idx), ...pool.slice(idx + 1)];
   return { drawn, rest };
+}
+
+/**
+ * Higher/Lower: pick the first event whose year differs from `anchorYear` by
+ * at least `minGap`. Falls back to the first event with any non-tied year so a
+ * round can always proceed (a tied year would be unwinnable). Returns null if
+ * every remaining event ties.
+ */
+function drawHigherLowerChallenger(
+  pool: TimelineEvent[],
+  anchorYear: number,
+  minGap: number,
+): { challenger: TimelineEvent; remaining: TimelineEvent[] } | null {
+  if (pool.length === 0) return null;
+  const gapIdx = pool.findIndex(
+    (e) => Math.abs(e.year - anchorYear) >= Math.max(minGap, 1),
+  );
+  let idx = gapIdx;
+  if (idx === -1) {
+    idx = pool.findIndex((e) => e.year !== anchorYear);
+  }
+  if (idx === -1) return null;
+  const challenger = pool[idx];
+  const remaining = [...pool.slice(0, idx), ...pool.slice(idx + 1)];
+  return { challenger, remaining };
 }
 
 function formatYear(y: number): string {
@@ -311,6 +339,29 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           selectedSubcategories: state.selectedSubcategories,
           pool: remaining,
           reverseRound: round,
+        };
+      }
+
+      if (state.mode === "higherlower") {
+        // Need an anchor and a challenger that differ in year by at least the
+        // difficulty's min gap (a tie would be unwinnable; tight gaps are hard).
+        if (events.length < 2) return state;
+        const [anchor, ...rest] = events;
+        const drawn = drawHigherLowerChallenger(rest, anchor.year, gap);
+        if (!drawn) return state;
+        const round: HigherLowerRound = {
+          anchor,
+          challenger: drawn.challenger,
+          pickedDirection: null,
+        };
+        return {
+          ...initialState,
+          status: "playing",
+          mode: "higherlower",
+          difficulty: state.difficulty,
+          selectedSubcategories: state.selectedSubcategories,
+          pool: drawn.remaining,
+          higherLowerRound: round,
         };
       }
 
@@ -546,6 +597,47 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         };
       }
 
+      if (state.mode === "higherlower") {
+        // Promote the prior challenger to anchor; draw a fresh challenger
+        // respecting the difficulty's min year gap.
+        const current = state.higherLowerRound;
+        const newAnchor = current?.challenger ?? state.pool[0] ?? null;
+        if (!newAnchor) {
+          return {
+            ...state,
+            status: "gameover",
+            higherLowerRound: null,
+            lastResult: null,
+          };
+        }
+        const startPool = current ? state.pool : state.pool.slice(1);
+        const drawn = drawHigherLowerChallenger(
+          startPool,
+          newAnchor.year,
+          minGap,
+        );
+        if (!drawn) {
+          return {
+            ...state,
+            status: "gameover",
+            higherLowerRound: null,
+            lastResult: null,
+          };
+        }
+        return {
+          ...state,
+          higherLowerRound: {
+            anchor: newAnchor,
+            challenger: drawn.challenger,
+            pickedDirection: null,
+          },
+          pool: drawn.remaining,
+          hintUsedOnCurrent: null,
+          hintReveal: null,
+          lastResult: null,
+        };
+      }
+
       const placedYears = state.timeline.map((e) => e.year);
       const { drawn, rest } = drawCard(state.pool, placedYears, minGap);
       if (!drawn) {
@@ -607,6 +699,47 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           placedEvent: placed,
           correctSlotIndices: [round.correctIndex],
           chosenSlotIndex: action.choiceIndex,
+        },
+      };
+    }
+
+    case "pick-higher-lower": {
+      if (state.status !== "playing" || !state.higherLowerRound) return state;
+      if (state.higherLowerRound.pickedDirection !== null) return state;
+      const round = state.higherLowerRound;
+      // "earlier" = challenger came before anchor (year < anchor.year).
+      const truth: "earlier" | "later" =
+        round.challenger.year < round.anchor.year ? "earlier" : "later";
+      const correct = action.direction === truth;
+      const placed: PlacedEvent = {
+        ...round.challenger,
+        correct,
+        hintUsed: null,
+      };
+      const { pointsEarned, newStreak } = scoreRound({
+        correct,
+        hintUsed: null,
+        streakBefore: state.streak,
+      });
+      const strikes = correct ? state.strikes : state.strikes + 1;
+      const status = strikes >= STRIKES_MAX ? "gameover" : "playing";
+      return {
+        ...state,
+        score: state.score + pointsEarned,
+        streak: newStreak,
+        bestStreak: Math.max(state.bestStreak, newStreak),
+        strikes,
+        status,
+        placements: state.placements + 1,
+        correctPlacements: state.correctPlacements + (correct ? 1 : 0),
+        higherLowerRound: { ...round, pickedDirection: action.direction },
+        hintReveal: null,
+        lastResult: {
+          correct,
+          pointsEarned,
+          placedEvent: placed,
+          correctSlotIndices: [],
+          chosenSlotIndex: 0,
         },
       };
     }

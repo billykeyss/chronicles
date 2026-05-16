@@ -67,7 +67,18 @@ export type GameStatus = "picking" | "playing" | "gameover";
 
 export type Difficulty = "easy" | "medium" | "hard";
 
-export type GameMode = "timeline" | "reverse";
+export type GameMode = "timeline" | "reverse" | "higherlower";
+
+export type HigherLowerDirection = "earlier" | "later";
+
+export type HigherLowerRound = {
+  /** Reference card with year visible. */
+  anchor: TimelineEvent;
+  /** Mystery card; year is hidden until the player commits. */
+  challenger: TimelineEvent;
+  /** Player's guess of where the challenger sits relative to the anchor. */
+  pickedDirection: HigherLowerDirection | null;
+};
 
 export const DIFFICULTY_GAP: Record<Difficulty, number> = {
   easy: 100,
@@ -119,6 +130,8 @@ export type GameState = {
    * pick, and outcome. Empty in timeline mode.
    */
   reverseHistory: ReverseRound[];
+  /** Higher/Lower-mode current round. Null in other modes. */
+  higherLowerRound: HigherLowerRound | null;
   strikes: number;
   hintsRemaining: number;
   hintUsedOnCurrent: HintType | null;

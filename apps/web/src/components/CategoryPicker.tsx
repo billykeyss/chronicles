@@ -36,24 +36,28 @@ const DIFFICULTIES: Array<{
   label: string;
   timeline: DifficultyCopy;
   reverse: DifficultyCopy;
+  higherlower: DifficultyCopy;
 }> = [
   {
     id: "easy",
     label: "Easy",
     timeline: { gap: "≥ 100 yrs", description: "Forgiving spacing" },
     reverse: { gap: "± 100 yrs", description: "Wide year range" },
+    higherlower: { gap: "≥ 100 yrs", description: "Obvious gaps" },
   },
   {
     id: "medium",
     label: "Medium",
     timeline: { gap: "≥ 50 yrs", description: "Default balance" },
     reverse: { gap: "± 50 yrs", description: "Within a generation" },
+    higherlower: { gap: "≥ 50 yrs", description: "Default balance" },
   },
   {
     id: "hard",
     label: "Hard",
     timeline: { gap: "≥ 10 yrs", description: "Tight order" },
     reverse: { gap: "± 10 yrs", description: "Same decade" },
+    higherlower: { gap: "≥ 10 yrs", description: "Close calls" },
   },
 ];
 
@@ -71,6 +75,11 @@ const MODES: Array<{
     id: "reverse",
     label: "Reverse",
     description: "Pick which event happened in the shown year.",
+  },
+  {
+    id: "higherlower",
+    label: "Higher / Lower",
+    description: "Did the next event come before or after this one?",
   },
 ];
 
@@ -224,7 +233,12 @@ export default function CategoryPicker({
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mb: 3 }}>
         {DIFFICULTIES.map((d) => {
           const active = d.id === difficulty;
-          const copy = mode === "reverse" ? d.reverse : d.timeline;
+          const copy =
+            mode === "reverse"
+              ? d.reverse
+              : mode === "higherlower"
+                ? d.higherlower
+                : d.timeline;
           return (
             <Box
               key={d.id}

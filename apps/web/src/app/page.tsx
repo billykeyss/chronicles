@@ -33,6 +33,7 @@ import HintModal from "@/components/HintModal";
 import HudBar from "@/components/HudBar";
 import { useThemeMode } from "@/components/ThemeModeProvider";
 import ResultToast from "@/components/ResultToast";
+import HigherLowerPanel from "@/components/HigherLowerPanel";
 import ReversePanel from "@/components/ReversePanel";
 import ReverseRevealDialog from "@/components/ReverseRevealDialog";
 import Timeline from "@/components/Timeline";
@@ -164,7 +165,14 @@ export default function HomePage() {
         persisted.reverseRound.pickedIndex !== null;
       const stalledTimeline =
         persisted.mode === "timeline" && persisted.current === null;
-      if (persisted.status === "playing" && (stalledReverse || stalledTimeline)) {
+      const stalledHigherLower =
+        persisted.mode === "higherlower" &&
+        persisted.higherLowerRound !== null &&
+        persisted.higherLowerRound.pickedDirection !== null;
+      if (
+        persisted.status === "playing" &&
+        (stalledReverse || stalledTimeline || stalledHigherLower)
+      ) {
         dispatch({ type: "next-card" });
       }
       const t = setTimeout(() => {
@@ -251,21 +259,35 @@ export default function HomePage() {
     if (state.reverseRound) {
       for (const c of state.reverseRound.choices) seenIds.push(c.event.id);
     }
+    if (state.higherLowerRound) {
+      seenIds.push(state.higherLowerRound.anchor.id);
+      seenIds.push(state.higherLowerRound.challenger.id);
+    }
     recordSeenEventIds(seenIds);
     const closeT = setTimeout(() => setToastOpen(false), TOAST_VISIBLE_MS);
     // In reverse mode, always pause auto-advance and pop the reveal dialog so
     // the player gets a clear look at every event in the round before moving on.
     const pauseForReveal = state.mode === "reverse";
     if (pauseForReveal) setReverseRevealOpen(true);
+    // Higher/Lower needs an inline reveal beat so the player sees the
+    // challenger's year before it gets promoted to anchor.
+    const delay =
+      state.mode === "higherlower" ? 1600 : NEXT_CARD_DELAY_MS;
     const drawT =
       state.status === "playing" && !pauseForReveal
-        ? setTimeout(() => dispatch({ type: "next-card" }), NEXT_CARD_DELAY_MS)
+        ? setTimeout(() => dispatch({ type: "next-card" }), delay)
         : null;
     return () => {
       clearTimeout(closeT);
       if (drawT) clearTimeout(drawT);
     };
-  }, [state.lastResult, state.status, state.reverseRound, state.mode]);
+  }, [
+    state.lastResult,
+    state.status,
+    state.reverseRound,
+    state.higherLowerRound,
+    state.mode,
+  ]);
 
   useEffect(() => {
     setCurrentSummary(null);
@@ -315,6 +337,22 @@ export default function HomePage() {
     return () => controllers.forEach((c) => c.abort());
   }, [state.reverseRound, fetchAndStoreThumbnail, thumbnails]);
 
+  // Higher/Lower: fetch summaries for the anchor and challenger.
+  useEffect(() => {
+    if (!state.higherLowerRound) return;
+    const controllers: AbortController[] = [];
+    for (const ev of [
+      state.higherLowerRound.anchor,
+      state.higherLowerRound.challenger,
+    ]) {
+      if (thumbnails[ev.id] !== undefined) continue;
+      const controller = new AbortController();
+      controllers.push(controller);
+      fetchAndStoreThumbnail(ev, controller.signal).catch(() => {});
+    }
+    return () => controllers.forEach((c) => c.abort());
+  }, [state.higherLowerRound, fetchAndStoreThumbnail, thumbnails]);
+
   const handleStart = () => {
     setThumbnails({});
     setSummaries({});
@@ -330,7 +368,9 @@ export default function HomePage() {
       recordSeenEventIds(
         state.mode === "reverse"
           ? ordered.slice(0, 3).map((e) => e.id)
-          : [ordered[0].id],
+          : state.mode === "higherlower"
+            ? ordered.slice(0, 2).map((e) => e.id)
+            : [ordered[0].id],
       );
     }
     dispatch({ type: "start-game", events: ordered });
@@ -693,6 +733,22 @@ export default function HomePage() {
                   dispatch({ type: "verify-reverse", choiceIndex: i })
                 }
                 onOpenHistory={(idx) => setHistoryIndex(idx)}
+              />
+            )}
+
+          {hydrated &&
+            !menuOpen &&
+            state.status !== "picking" &&
+            state.mode === "higherlower" &&
+            state.higherLowerRound && (
+              <HigherLowerPanel
+                round={state.higherLowerRound}
+                thumbnails={thumbnails}
+                summaries={summaries}
+                onPick={(direction) => {
+                  if (state.lastResult) return;
+                  dispatch({ type: "pick-higher-lower", direction });
+                }}
               />
             )}
 

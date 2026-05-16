@@ -1,15 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import Box from "@mui/material/Box";
 import ButtonBase from "@mui/material/ButtonBase";
+import Dialog from "@mui/material/Dialog";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { Check, ExternalLink, Lightbulb, Search, X } from "lucide-react";
+import { Check, ExternalLink, Lightbulb, Search, X, ZoomIn } from "lucide-react";
 import { CATEGORY_BY_ID } from "@/game/data";
 import { formatYear } from "./EventCard";
-import type { HintReveal, ReverseRound } from "@/game/types";
+import type {
+  HintReveal,
+  ReverseRound,
+  TimelineEvent,
+} from "@/game/types";
 import { wikipediaPageUrl, type WikipediaSummary } from "@/wikipedia/api";
 
 type Props = {
@@ -45,11 +51,23 @@ export default function ReversePanel({
     settled && round.pickedIndex === round.correctIndex;
   const verifyArmed = round.verifyArmed && !settled;
   const confirmedIndex = round.verifiedIndex;
+  const [lightboxEvent, setLightboxEvent] = useState<TimelineEvent | null>(
+    null,
+  );
+  const lightboxSummary = lightboxEvent
+    ? summaries?.[lightboxEvent.id]
+    : undefined;
+  const lightboxSrc =
+    lightboxSummary?.original?.url ??
+    (lightboxEvent ? thumbnails?.[lightboxEvent.id] : undefined);
+  const lightboxCat = lightboxEvent
+    ? CATEGORY_BY_ID[lightboxEvent.category]
+    : undefined;
 
   return (
     <Box>
       {/* Year prompt */}
-      <Box sx={{ textAlign: "center", py: { xs: 2, sm: 3 } }}>
+      <Box sx={{ textAlign: "center", py: { xs: 1, sm: 3 } }}>
         <Typography
           variant="caption"
           sx={{
@@ -59,7 +77,7 @@ export default function ReversePanel({
             textTransform: "uppercase",
             fontSize: { xs: 10, sm: 11 },
             display: "block",
-            mb: 1,
+            mb: { xs: 0.5, sm: 1 },
           }}
         >
           Which event happened in
@@ -68,7 +86,7 @@ export default function ReversePanel({
           sx={{
             fontFamily: 'var(--font-numerals), serif',
             fontWeight: 400,
-            fontSize: { xs: 72, sm: 104, md: 128 },
+            fontSize: { xs: 56, sm: 104, md: 128 },
             color: "primary.main",
             lineHeight: 0.95,
             letterSpacing: "-0.02em",
@@ -79,7 +97,7 @@ export default function ReversePanel({
         <Typography
           variant="caption"
           sx={{
-            display: "block",
+            display: { xs: "none", sm: "block" },
             mt: 1,
             color: "text.secondary",
             fontFamily: 'var(--font-display), serif',
@@ -136,7 +154,7 @@ export default function ReversePanel({
             xs: "1fr",
             sm: "repeat(3, 1fr)",
           },
-          gap: { xs: 1.5, sm: 2 },
+          gap: { xs: 1, sm: 2 },
         }}
       >
         {round.choices.map((choice, i) => {
@@ -186,6 +204,9 @@ export default function ReversePanel({
                 cursor: settled || eliminated ? "default" : "pointer",
                 opacity: eliminated ? 0.35 : 1,
                 transition: "border-color .15s, transform .15s, box-shadow .2s",
+                display: "flex",
+                flexDirection: { xs: "row", sm: "column" },
+                minHeight: { xs: 140, sm: "auto" },
                 ...(isConfirmed && {
                   boxShadow:
                     "0 0 0 2px var(--mui-palette-success-main), 0 12px 24px rgba(0,0,0,.25)",
@@ -207,17 +228,29 @@ export default function ReversePanel({
               }}
             >
               <Box
+                onClick={(e) => {
+                  if (!thumb) return;
+                  e.stopPropagation();
+                  setLightboxEvent(choice.event);
+                }}
                 sx={{
-                  width: "100%",
-                  aspectRatio: "4 / 3",
+                  width: { xs: 140, sm: "100%" },
+                  flexShrink: 0,
+                  alignSelf: { xs: "stretch", sm: "auto" },
+                  aspectRatio: { xs: "auto", sm: "4 / 3" },
                   backgroundColor: "background.default",
                   backgroundImage: thumb ? `url(${thumb})` : undefined,
                   backgroundSize: "contain",
                   backgroundRepeat: "no-repeat",
                   backgroundPosition: "center",
-                  borderBottom: 1,
+                  borderBottom: { xs: 0, sm: 1 },
+                  borderRight: { xs: 1, sm: 0 },
                   borderColor: "divider",
                   position: "relative",
+                  cursor: thumb ? "zoom-in" : "default",
+                  "&:hover .zoom-hint": {
+                    opacity: thumb ? 1 : 0,
+                  },
                 }}
               >
                 {!thumb && cat?.Icon && (
@@ -235,22 +268,65 @@ export default function ReversePanel({
                     <cat.Icon size={40} strokeWidth={1.25} />
                   </Box>
                 )}
+                {thumb && (
+                  <Box
+                    className="zoom-hint"
+                    sx={{
+                      position: "absolute",
+                      bottom: 6,
+                      right: 6,
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(10,10,20,0.65)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: 0,
+                      transition: "opacity .15s",
+                    }}
+                    aria-hidden
+                  >
+                    <ZoomIn size={12} strokeWidth={1.75} />
+                  </Box>
+                )}
                 {showCorrect && <StatusBadge kind="correct" />}
                 {showWrong && <StatusBadge kind="wrong" />}
                 {!settled && isConfirmed && <StatusBadge kind="confirmed" />}
               </Box>
-              <Box sx={{ p: 1.5 }}>
+              <Box sx={{ p: { xs: 1.25, sm: 1.5 }, flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 <Typography
                   sx={{
                     fontFamily: 'var(--font-display), serif',
-                    fontSize: 17,
+                    fontSize: { xs: 15, sm: 17 },
                     fontWeight: 500,
                     lineHeight: 1.2,
                     color: "text.primary",
+                    overflow: "hidden",
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: { xs: 2, sm: 3 },
                   }}
                 >
                   {choice.event.title}
                 </Typography>
+                {choice.event.related && (
+                  <Typography
+                    sx={{
+                      mt: 0.5,
+                      fontSize: { xs: 11.5, sm: 12 },
+                      lineHeight: 1.4,
+                      color: "text.secondary",
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 2,
+                    }}
+                  >
+                    {choice.event.related}
+                  </Typography>
+                )}
                 <Box
                   sx={{
                     display: "flex",
@@ -310,7 +386,7 @@ export default function ReversePanel({
                       color: "text.secondary",
                       fontStyle: "italic",
                       overflow: "hidden",
-                      display: "-webkit-box",
+                      display: { xs: "none", sm: "-webkit-box" },
                       WebkitBoxOrient: "vertical",
                       WebkitLineClamp: 3,
                     }}
@@ -362,6 +438,77 @@ export default function ReversePanel({
           onOpen={onOpenHistory}
         />
       )}
+
+      <Dialog
+        open={lightboxEvent !== null}
+        onClose={() => setLightboxEvent(null)}
+        maxWidth="lg"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { backgroundColor: "background.default", border: 0 },
+          },
+        }}
+      >
+        <Box
+          onClick={() => setLightboxEvent(null)}
+          sx={{
+            cursor: "zoom-out",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            p: { xs: 2, sm: 3 },
+            gap: 1.5,
+          }}
+        >
+          {lightboxSrc && lightboxEvent && (
+            <Box
+              component="img"
+              src={lightboxSrc}
+              alt={lightboxEvent.title}
+              sx={{
+                maxWidth: "100%",
+                maxHeight: "75vh",
+                objectFit: "contain",
+                borderRadius: 1,
+                border: 1,
+                borderColor: "divider",
+                backgroundColor: "background.paper",
+              }}
+            />
+          )}
+          {lightboxEvent && (
+            <Box sx={{ textAlign: "center" }}>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-display), serif",
+                  fontSize: 22,
+                  color: "text.primary",
+                }}
+              >
+                {lightboxEvent.title}
+              </Typography>
+              {lightboxCat && (
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: "block",
+                    mt: 0.5,
+                    color: "text.secondary",
+                    fontFamily: "var(--font-mono), monospace",
+                    fontSize: 11,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {lightboxCat.name}
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      </Dialog>
     </Box>
   );
 }
